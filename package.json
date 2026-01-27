@@ -1,6 +1,6 @@
 {
   "name": "clawdbot-penfield",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "description": "Native Clawdbot plugin for Penfield memory integration",
   "main": "dist/index.js",
