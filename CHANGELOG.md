@@ -57,5 +57,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Personality
 - `penfield_awaken` - Load personality configuration
 
-[Unreleased]: https://github.com/penfieldlabs/clawdbot-penfield/compare/v1.0.1...HEAD
+[1.0.3]: https://github.com/penfieldlabs/clawdbot-penfield/releases/tag/v1.0.3
+[1.0.2]: https://github.com/penfieldlabs/clawdbot-penfield/releases/tag/v1.0.2
 [1.0.1]: https://github.com/penfieldlabs/clawdbot-penfield/releases/tag/v1.0.1
