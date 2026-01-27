@@ -38,14 +38,14 @@ Penfield is in **free beta**. Sign up for access:
 
 Native Clawdbot plugin providing direct integration with Penfield's memory and knowledge graph API. This plugin offers 4-5x performance improvement over the MCP server approach by eliminating the mcporter → MCP → Penfield stack.
 
-- **16 Memory Tools**: Complete 1:1 feature parity with Penfield MCP server
+- **16 Memory Tools**
 - **OAuth Device Code Flow**: Secure authentication following RFC 8628
-- **Automatic Token Refresh**: Transparent token management with 240-minute expiry buffer
 - **Hybrid Search**: BM25 + vector + graph search capabilities
 - **Knowledge Graph**: Build and traverse relationships between memories
 - **Context Management**: Save and restore memory checkpoints
 - **Artifact Storage**: Store and retrieve files in Penfield
 - **Reflection & Analysis**: Analyze memory patterns and generate insights
+- **Context Management**: Save and restore memory checkpoints
 
 ## Installation
 
@@ -66,35 +66,6 @@ clawdbot plugins install -l .
 ## Configuration
 
 The plugin is **auto-enabled when loaded**. No configuration required for production use.
-
-**Default URLs (production):**
-- API: `https://api.penfield.app`
-- Auth: `https://auth.penfield.app`
-
-**Override with environment variables (for development):**
-
-```bash
-export PENFIELD_API_URL="https://api-dev.penfield.app"
-export PENFIELD_AUTH_URL="https://auth-dev.penfield.app"
-```
-
-**Or with config in `~/.clawdbot/clawdbot.json`:**
-
-```json
-{
-  "plugins": {
-    "entries": {
-      "penfield": {
-        "enabled": true,
-        "config": {
-          "apiUrl": "https://api-dev.penfield.app",
-          "authUrl": "https://auth-dev.penfield.app"
-        }
-      }
-    }
-  }
-}
-```
 
 ## Authentication
 
@@ -125,7 +96,7 @@ This will:
 }
 ```
 
-Location: `~/.clawdbot/extensions/penfield/credentials.json`
+Location: `~/.clawdbot/extensions/clawdbot-penfield/credentials.json`
 File permissions: `0o600` (owner-only read/write)
 
 ## Available Tools

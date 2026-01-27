@@ -118,7 +118,7 @@ This will:
 3. Display a device code for user authentication
 4. Poll for token completion
 
-Credentials stored at: `~/.clawdbot/extensions/penfield/credentials.json`
+Credentials stored at: `~/.clawdbot/extensions/clawdbot-penfield/credentials.json`
 File permissions: `0o600` (owner-only)
 
 ---

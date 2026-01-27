@@ -37,7 +37,7 @@ interface AuthServiceOptions {
 }
 
 export function createAuthService(
-  api: { logger: Logger; resolvePath: (path: string) => string },
+  api: { id: string; logger: Logger; resolvePath: (path: string) => string },
   options: AuthServiceOptions
 ): AuthService {
   const { authUrl, clientId: providedClientId } = options;

@@ -22,7 +22,7 @@ The plugin implements OAuth 2.0 Device Code Flow (RFC 8628) with dynamic endpoin
 ### Credentials File
 
 ```bash
-~/.clawdbot/extensions/penfield/credentials.json
+~/.clawdbot/extensions/clawdbot-penfield/credentials.json
 ```
 
 ```json
