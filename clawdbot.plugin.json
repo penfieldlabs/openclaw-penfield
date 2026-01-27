@@ -1,0 +1,12 @@
+{
+  "id": "penfield",
+  "kind": "memory",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "authUrl": { "type": "string" },
+      "apiUrl": { "type": "string" }
+    }
+  }
+}

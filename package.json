@@ -1,0 +1,52 @@
+{
+  "name": "clawdbot-penfield",
+  "version": "1.0.1",
+  "type": "module",
+  "description": "Native Clawdbot plugin for Penfield memory integration",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "clawdbot",
+    "penfield",
+    "memory",
+    "knowledge-graph"
+  ],
+  "author": "Frank Fiegel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/penfieldlabs/clawdbot-penfield.git"
+  },
+  "bugs": {
+    "url": "https://github.com/penfieldlabs/clawdbot-penfield/issues"
+  },
+  "homepage": "https://github.com/penfieldlabs/clawdbot-penfield#readme",
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.47",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.9",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"**/*.{ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,json,md}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "clawdbot": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  }
+}
