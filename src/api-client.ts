@@ -1,11 +1,11 @@
 import type { AuthService } from "./auth-service.js";
-import type { Logger } from "./types.js";
+import type { PluginLogger } from "./types.js";
 
 export class PenfieldApiClient {
   constructor(
     private auth: AuthService,
     private apiUrl: string,
-    private logger?: Logger
+    private logger?: PluginLogger
   ) {}
 
   async request<T>(
@@ -22,7 +22,7 @@ export class PenfieldApiClient {
       url += `?${params.toString()}`;
     }
 
-    this.logger?.info(`[penfield] ${method} ${endpoint}`);
+    this.logger?.debug?.(`[penfield] ${method} ${endpoint}`);
 
     const response = await fetch(url, {
       method,

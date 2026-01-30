@@ -7,10 +7,10 @@ const DEFAULT_API_URL = process.env.PENFIELD_API_URL || "https://api.penfield.ap
 export { DEFAULT_AUTH_URL, DEFAULT_API_URL };
 
 // Minimal config schema - everything optional for device flow
-// Note: enabled is handled by Clawdbot at entry level, not in pluginConfig
+// Note: enabled is handled by OpenClaw at entry level, not in pluginConfig
 //
 // IMPORTANT: This zod schema is the source of truth for config validation.
-// If you modify this, also update clawdbot.plugin.json configSchema to match.
+// If you modify this, also update openclaw.plugin.json configSchema to match.
 export const PenfieldConfigSchema = z.object({
   authUrl: z.string().optional(),
   apiUrl: z.string().optional(),

@@ -1,13 +1,27 @@
-# Release Notes: clawdbot-penfield v1.0.1
+# Release Notes: openclaw-penfield v1.0.4
 
-**Date:** January 27, 2026
-**Type:** Patch Release
+**Date:** January 30, 2026
+**Type:** Patch Release (Rebrand)
 
 ---
 
 ## Overview
 
-Native Clawdbot plugin providing direct integration with Penfield's memory and knowledge graph API. This release delivers full feature parity with the Penfield MCP server while offering 4-5x performance improvement through native HTTP.
+Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API. This release delivers full feature parity with the Penfield MCP server while offering 4-5x performance improvement through native HTTP.
+
+**v1.0.4 is a complete rebrand from Clawdbot to OpenClaw.** Users must re-authenticate after updating.
+
+---
+
+## Breaking Changes
+
+- Package renamed: `clawdbot-penfield` → `openclaw-penfield`
+- Plugin ID changed: `clawdbot-penfield` → `openclaw-penfield`
+- Credential path changed: `~/.clawdbot/extensions/` → `~/.openclaw/extensions/`
+- CLI commands: `clawdbot penfield` → `openclaw penfield`
+- Manifest file: `clawdbot.plugin.json` → `openclaw.plugin.json`
+
+**Migration:** Run `openclaw penfield login` to re-authenticate.
 
 ---
 
@@ -90,18 +104,18 @@ Native Clawdbot plugin providing direct integration with Penfield's memory and k
 ## Installation
 
 ```bash
-npm install clawdbot-penfield
-clawdbot plugins install clawdbot-penfield
+npm install openclaw-penfield
+openclaw plugins install openclaw-penfield
 ```
 
 Or from source:
 
 ```bash
-git clone https://github.com/penfieldlabs/clawdbot-penfield.git
-cd clawdbot-penfield
+git clone https://github.com/penfieldlabs/openclaw-penfield.git
+cd openclaw-penfield
 npm install
 npm run build
-clawdbot plugins install -l .
+openclaw plugins install -l .
 ```
 
 ---
@@ -109,7 +123,7 @@ clawdbot plugins install -l .
 ## Authentication
 
 ```bash
-clawdbot penfield login
+openclaw penfield login
 ```
 
 This will:
@@ -118,20 +132,14 @@ This will:
 3. Display a device code for user authentication
 4. Poll for token completion
 
-Credentials stored at: `~/.clawdbot/extensions/clawdbot-penfield/credentials.json`
+Credentials stored at: `~/.openclaw/extensions/openclaw-penfield/credentials.json`
 File permissions: `0o600` (owner-only)
-
----
-
-## Breaking Changes
-
-None. This is the first release.
 
 ---
 
 ## Requirements
 
-- Clawdbot CLI
+- OpenClaw CLI
 - Node.js 18+
 - Penfield account (api.penfield.app)
 
@@ -145,6 +153,6 @@ Author: Frank Fiegel
 
 ## Links
 
-- Repository: https://github.com/penfieldlabs/clawdbot-penfield
-- Issues: https://github.com/penfieldlabs/clawdbot-penfield/issues
-- npm: https://www.npmjs.com/package/clawdbot-penfield
+- Repository: https://github.com/penfieldlabs/openclaw-penfield
+- Issues: https://github.com/penfieldlabs/openclaw-penfield/issues
+- npm: https://www.npmjs.com/package/openclaw-penfield

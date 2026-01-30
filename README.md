@@ -1,42 +1,42 @@
-# Penfield Memory for Clawdbot (clawdbot-penfield)
+# Penfield Memory for OpenClaw (openclaw-penfield)
 
-[![npm version](https://img.shields.io/npm/v/clawdbot-penfield.svg)](https://www.npmjs.com/package/clawdbot-penfield)
+[![npm version](https://img.shields.io/npm/v/openclaw-penfield.svg)](https://www.npmjs.com/package/openclaw-penfield)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Persistent, searchable memory for [Clawdbot](https://clawd.bot).**
+**Persistent, searchable memory for [OpenClaw](https://openclaw.ai).**
 
-Your lobster remembers every conversation, learns your preferences, and builds knowledge over time—across all your channels.
+Your agent remembers every conversation, learns your preferences, and builds knowledge over time—across all your channels.
 
-## 🦞 What is this?
+## What is this?
 
-A Clawdbot plugin that connects your agent to [Penfield](https://penfield.app), giving it:
+An OpenClaw plugin that connects your agent to [Penfield](https://penfield.app), giving it:
 
 - **Long-term memory** — Conversations persist forever, not just one session
 - **Semantic search** — "What did I say about the Tokyo trip?" actually works
 - **Knowledge graphs** — Memories connect to memories, building real understanding
 - **Cross-channel recall** — Remember WhatsApp convos from Discord
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-clawdbot plugins install clawdbot-penfield
+openclaw plugins install openclaw-penfield
 ```
 
 ```bash
-clawdbot penfield login
+openclaw penfield login
 ```
 
-Tell your Clawdbot to "Awaken with Penfield"
+Tell your agent to "Awaken with Penfield"
 
-## 🔑 Get Access
+## Get Access
 
 Penfield is in **free beta**. Sign up for access:
 
-**👉 [accounts.penfield.app/waitlist](https://accounts.penfield.app/waitlist)**
+**[accounts.penfield.app/waitlist](https://accounts.penfield.app/waitlist)**
 
 ## Features
 
-Native Clawdbot plugin providing direct integration with Penfield's memory and knowledge graph API. This plugin offers 4-5x performance improvement over the MCP server approach by eliminating the mcporter → MCP → Penfield stack.
+Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API. This plugin offers 4-5x performance improvement over the MCP server approach by eliminating the mcporter → MCP → Penfield stack.
 
 - **16 Memory Tools**
 - **OAuth Device Code Flow**: Secure authentication following RFC 8628
@@ -50,17 +50,17 @@ Native Clawdbot plugin providing direct integration with Penfield's memory and k
 ## Installation
 
 ```bash
-clawdbot plugins install clawdbot-penfield
+openclaw plugins install openclaw-penfield
 ```
 
 ### From Source (for contributors)
 
 ```bash
-git clone https://github.com/penfieldlabs/clawdbot-penfield.git
-cd clawdbot-penfield
+git clone https://github.com/penfieldlabs/openclaw-penfield.git
+cd openclaw-penfield
 npm install
 npm run build
-clawdbot plugins install -l .
+openclaw plugins install -l .
 ```
 
 ## Configuration
@@ -74,7 +74,7 @@ The plugin uses OAuth 2.0 Device Code Flow (RFC 8628) with automatic token refre
 ### CLI Login
 
 ```bash
-clawdbot penfield login
+openclaw penfield login
 ```
 
 This will:
@@ -96,7 +96,7 @@ This will:
 }
 ```
 
-Location: `~/.clawdbot/extensions/clawdbot-penfield/credentials.json`
+Location: `~/.openclaw/extensions/openclaw-penfield/credentials.json`
 File permissions: `0o600` (owner-only read/write)
 
 ## Available Tools
@@ -388,7 +388,7 @@ npm run build
 index.ts                     # Plugin entry point and registration
 src/
 ├── config.ts                # Zod configuration schema with DEFAULT_AUTH_URL/DEFAULT_API_URL
-├── types.ts                 # TypeScript type definitions (single source)
+├── types.ts                 # TypeScript type definitions (OpenClaw plugin API types)
 ├── types/typebox.ts         # Centralized TypeBox exports
 ├── auth-service.ts          # Background OAuth token refresh service
 ├── api-client.ts            # HTTP client wrapper
@@ -418,7 +418,7 @@ src/
 
 ## Service Lifecycle
 
-The plugin uses two services registered with Clawdbot:
+The plugin uses two services registered with OpenClaw:
 
 1. **penfield-auth**: Background token refresh service
    - Started when plugin loads
@@ -487,4 +487,4 @@ MIT
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/penfieldlabs/clawdbot-penfield/issues
+- GitHub Issues: https://github.com/penfieldlabs/openclaw-penfield/issues

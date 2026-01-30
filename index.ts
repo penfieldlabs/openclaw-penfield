@@ -3,10 +3,10 @@ import { createPenfieldRuntime, type PenfieldRuntime } from "./src/runtime.js";
 import { registerPenfieldTools } from "./src/tools/index.js";
 import { registerLoginCommand } from "./src/cli.js";
 import { createAuthService } from "./src/auth-service.js";
-import type { ClawdbotPluginApi } from "./src/types.js";
+import type { OpenClawPluginApi } from "./src/types.js";
 
 const penfieldPlugin = {
-  id: "penfield",
+  id: "openclaw-penfield",
   name: "Penfield Memory",
   description: "Native Penfield memory integration with 16 tools for knowledge management",
 
@@ -34,7 +34,7 @@ const penfieldPlugin = {
     },
   },
 
-  register(api: ClawdbotPluginApi) {
+  register(api: OpenClawPluginApi) {
     const cfg = PenfieldConfigSchema.parse(api.pluginConfig ?? {});
     const logger = api.logger;
 
@@ -71,11 +71,11 @@ const penfieldPlugin = {
     // Register background auth service
     api.registerService({
       id: "penfield-auth",
-      async start() {
+      async start(_ctx) {
         await authService.start();
         logger.info("[penfield-auth] Service started");
       },
-      async stop() {
+      async stop(_ctx) {
         await authService.stop();
         logger.info("[penfield-auth] Service stopped");
       },
@@ -87,10 +87,10 @@ const penfieldPlugin = {
     // Register service for runtime lifecycle
     api.registerService({
       id: "penfield",
-      async start() {
+      async start(_ctx) {
         logger.info("[penfield] Service started");
       },
-      async stop() {
+      async stop(_ctx) {
         if (runtime) {
           await runtime.stop();
           runtime = null;

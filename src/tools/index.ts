@@ -1,5 +1,5 @@
 import type { PenfieldRuntime } from "../runtime.js";
-import type { ClawdbotPluginApi } from "../types.js";
+import type { OpenClawPluginApi } from "../types.js";
 import type { PenfieldApiClient } from "../api-client.js";
 
 import { StoreToolSchema, executeStoreTool } from "./store.js";
@@ -29,7 +29,7 @@ import {
 import { AwakenToolSchema, executeAwakenTool } from "./awaken.js";
 
 export function registerPenfieldTools(
-  api: ClawdbotPluginApi,
+  api: OpenClawPluginApi,
   ensureRuntime: () => Promise<PenfieldRuntime>
 ) {
   const json = (payload: unknown) => ({

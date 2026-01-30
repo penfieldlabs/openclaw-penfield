@@ -1,17 +1,55 @@
 /**
- * Clawdbot Plugin API types for Penfield plugin
+ * OpenClaw Plugin API types for Penfield plugin
  *
- * Single source of truth for plugin interfaces.
- * These types are adapted from @clawdbot/types for plugin use.
+ * These types define the contract between Penfield and OpenClaw.
+ * They match the interfaces exported by openclaw/plugin-sdk.
+ *
+ * At runtime, OpenClaw provides the actual implementations.
+ * During development, these provide type safety.
  */
 
-export interface Logger {
-  info(...args: unknown[]): void;
-  warn(...args: unknown[]): void;
-  error(...args: unknown[]): void;
+/**
+ * Minimal Commander.js Command interface for CLI registration.
+ * Only includes methods we actually use.
+ */
+export interface CliCommand {
+  command(name: string): CliCommand;
+  description(msg: string): CliCommand;
+  action(fn: () => Promise<void>): CliCommand;
+  addHelpText(
+    position: "before" | "after" | "beforeAll" | "afterAll",
+    text: string | ((cmd: CliCommand) => string)
+  ): CliCommand;
 }
 
-export interface ClawdbotPluginApi {
+export interface PluginLogger {
+  debug?: (message: string) => void;
+  info: (message: string) => void;
+  warn: (message: string) => void;
+  error: (message: string) => void;
+}
+
+export interface OpenClawPluginServiceContext {
+  config: Record<string, unknown>;
+  workspaceDir?: string;
+  stateDir: string;
+  logger: PluginLogger;
+}
+
+export interface OpenClawPluginService {
+  id: string;
+  start: (ctx: OpenClawPluginServiceContext) => void | Promise<void>;
+  stop?: (ctx: OpenClawPluginServiceContext) => void | Promise<void>;
+}
+
+export interface OpenClawPluginCliContext {
+  program: CliCommand;
+  config: Record<string, unknown>;
+  workspaceDir?: string;
+  logger: PluginLogger;
+}
+
+export interface OpenClawPluginApi {
   /** Plugin identifier */
   id: string;
   /** Plugin name */
@@ -20,65 +58,47 @@ export interface ClawdbotPluginApi {
   version?: string;
   /** Plugin description */
   description?: string;
-  /** Plugin source module */
+  /** Plugin source module path */
   source: string;
-  /** Raw config object */
+  /** Full OpenClaw configuration */
   config: Record<string, unknown>;
-  /** Parsed plugin configuration */
-  pluginConfig: Record<string, unknown>;
-
-  /** Get plugin config by ID */
-  getPluginConfig(id: string): Record<string, unknown> | undefined;
+  /** Parsed plugin-specific configuration */
+  pluginConfig?: Record<string, unknown>;
 
   /** Resolve ~ paths to absolute paths */
   resolvePath(input: string): string;
 
   /** Logger instance */
-  logger: Logger;
+  logger: PluginLogger;
 
   /** Register CLI commands */
-  registerCli(fn: (ctx: ClawdbotCliContext) => void, opts?: { commands?: string[] }): void;
+  registerCli(
+    fn: (ctx: OpenClawPluginCliContext) => void | Promise<void>,
+    opts?: { commands?: string[] }
+  ): void;
 
-  /** Register a tool with single-object parameter pattern */
-  registerTool(tool: {
-    name: string;
-    label: string;
-    description: string;
-    parameters: unknown;
-    execute: (toolCallId: string, input: unknown) => Promise<unknown>;
-  }): void;
+  /** Register a tool */
+  registerTool(
+    tool: {
+      name: string;
+      label: string;
+      description: string;
+      parameters: unknown;
+      execute: (toolCallId: string, input: unknown) => Promise<unknown>;
+    },
+    opts?: { name?: string; names?: string[]; optional?: boolean }
+  ): void;
 
   /** Register service lifecycle */
-  registerService(service: {
-    id: string;
-    start?: () => Promise<void>;
-    stop?: () => Promise<void>;
-  }): void;
+  registerService(service: OpenClawPluginService): void;
 
-  /** Runtime context (available in agent mode, not CLI) */
+  /** Runtime context */
   runtime?: {
-    prompter: {
+    prompter?: {
       info(msg: string): void;
       warn(msg: string): void;
       error(msg: string): void;
     };
     openUrl?: (url: string) => Promise<void>;
   };
-}
-
-export interface ClawdbotCliContext {
-  program: {
-    command(name: string): ClawdbotCliCommand;
-  };
-  logger: Logger;
-}
-
-export interface ClawdbotCliCommand {
-  command(name: string): ClawdbotCliCommand;
-  description(msg: string): ClawdbotCliCommand;
-  action(fn: () => Promise<void>): ClawdbotCliCommand;
-  addHelpText(
-    position: 'before' | 'after' | 'beforeAll' | 'afterAll',
-    text: string | ((cmd: this) => string)
-  ): ClawdbotCliCommand;
 }

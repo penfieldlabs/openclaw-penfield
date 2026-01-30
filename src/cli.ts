@@ -2,7 +2,7 @@
  * CLI command registration for Penfield plugin
  */
 
-import type { ClawdbotPluginApi, ClawdbotCliContext } from './types.js';
+import type { OpenClawPluginApi, OpenClawPluginCliContext } from './types.js';
 import { executeDeviceFlow } from './device-flow.js';
 import { saveCredential } from './store.js';
 import { DEFAULT_AUTH_URL } from './config.js';
@@ -10,8 +10,8 @@ import { DEFAULT_AUTH_URL } from './config.js';
 /**
  * Register the 'penfield' CLI command group with 'login' subcommand
  */
-export function registerLoginCommand(api: ClawdbotPluginApi): void {
-  api.registerCli(({ program, logger }: ClawdbotCliContext) => {
+export function registerLoginCommand(api: OpenClawPluginApi): void {
+  api.registerCli(({ program, logger }: OpenClawPluginCliContext) => {
     const root = program
       .command('penfield')
       .description('Penfield Memory commands');

@@ -1,5 +1,5 @@
 {
-  "id": "clawdbot-penfield",
+  "id": "openclaw-penfield",
   "kind": "memory",
   "configSchema": {
     "type": "object",

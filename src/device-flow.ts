@@ -79,7 +79,7 @@ async function getOrRegisterClient(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      client_name: 'clawdbot-penfield',
+      client_name: 'openclaw-penfield',
       redirect_uris: ['http://localhost:8080/callback'],
       grant_types: ['urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'],
       response_types: ['code'],

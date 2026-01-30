@@ -1,16 +1,16 @@
 {
-  "name": "clawdbot-penfield",
-  "version": "1.0.3",
+  "name": "openclaw-penfield",
+  "version": "1.0.4",
   "type": "module",
-  "description": "Native Clawdbot plugin for Penfield memory integration",
+  "description": "Native OpenClaw plugin for Penfield memory integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "clawdbot.plugin.json"
+    "openclaw.plugin.json"
   ],
   "keywords": [
-    "clawdbot",
+    "openclaw",
     "penfield",
     "memory",
     "knowledge-graph"
@@ -19,15 +19,18 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/penfieldlabs/clawdbot-penfield.git"
+    "url": "git+https://github.com/penfieldlabs/openclaw-penfield.git"
   },
   "bugs": {
-    "url": "https://github.com/penfieldlabs/clawdbot-penfield/issues"
+    "url": "https://github.com/penfieldlabs/openclaw-penfield/issues"
   },
-  "homepage": "https://github.com/penfieldlabs/clawdbot-penfield#readme",
+  "homepage": "https://github.com/penfieldlabs/openclaw-penfield#readme",
   "dependencies": {
     "@sinclair/typebox": "^0.34.47",
     "zod": "^3.22.4"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.1.26"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
@@ -45,7 +48,7 @@
     "format:check": "prettier --check \"**/*.{ts,json,md}\"",
     "typecheck": "tsc --noEmit"
   },
-  "clawdbot": {
+  "openclaw": {
     "extensions": [
       "./dist/index.js"
     ]

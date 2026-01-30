@@ -2,7 +2,7 @@
  * Background authentication service for Penfield plugin
  *
  * Handles OAuth 2.0 token refresh silently in the background
- * without agent involvement. Registered as a Clawdbot service.
+ * without agent involvement. Registered as an OpenClaw service.
  *
  * Supports RFC 8628 Device Code Flow and RFC 9700 Token Rotation.
  * For refresh tokens, use a DCR-registered client with offline_access scope.
@@ -14,7 +14,7 @@
 
 import { loadCredential, saveCredential, TOKEN_EXPIRY_BUFFER_MS } from './store.js';
 import { refreshAccessToken } from './device-flow.js';
-import type { Logger } from './types.js';
+import type { PluginLogger } from './types.js';
 
 // Refresh interval: check every 60 minutes
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
@@ -37,7 +37,7 @@ interface AuthServiceOptions {
 }
 
 export function createAuthService(
-  api: { id: string; logger: Logger; resolvePath: (path: string) => string },
+  api: { id: string; logger: PluginLogger; resolvePath: (path: string) => string },
   options: AuthServiceOptions
 ): AuthService {
   const { authUrl, clientId: providedClientId } = options;
@@ -209,7 +209,7 @@ export function createAuthService(
       // Load from file if not in memory
       if (!accessToken || !expiresAt) {
         if (!loadCredentials()) {
-          throw new Error('Not authenticated. Run: clawdbot penfield login');
+          throw new Error('Not authenticated. Run: openclaw penfield login');
         }
       }
 
@@ -219,10 +219,10 @@ export function createAuthService(
         if (refreshToken) {
           const success = await doRefreshAccessToken();
           if (!success) {
-            throw new Error('Token refresh failed. Run: clawdbot penfield login');
+            throw new Error('Token refresh failed. Run: openclaw penfield login');
           }
         } else {
-          throw new Error('Token expired. Run: clawdbot penfield login');
+          throw new Error('Token expired. Run: openclaw penfield login');
         }
       }
 

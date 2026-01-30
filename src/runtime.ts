@@ -1,7 +1,7 @@
 import { type AuthService } from "./auth-service.js";
 import { PenfieldApiClient } from "./api-client.js";
 import { DEFAULT_API_URL, type PenfieldConfig } from "./config.js";
-import type { ClawdbotPluginApi, Logger } from "./types.js";
+import type { OpenClawPluginApi, PluginLogger } from "./types.js";
 
 export interface PenfieldRuntime {
   config: PenfieldConfig;
@@ -11,10 +11,10 @@ export interface PenfieldRuntime {
 }
 
 export interface CreateRuntimeParams {
-  api: ClawdbotPluginApi;
+  api: OpenClawPluginApi;
   config: PenfieldConfig;
   authService: AuthService;
-  logger?: Logger;
+  logger?: PluginLogger;
 }
 
 export async function createPenfieldRuntime(params: CreateRuntimeParams): Promise<PenfieldRuntime> {

@@ -1,7 +1,7 @@
 /**
  * File-based credential storage for Penfield plugin
  *
- * Credentials are stored at: ~/.clawdbot/extensions/{pluginId}/credentials.json
+ * Credentials are stored at: ~/.openclaw/extensions/{pluginId}/credentials.json
  * Directory permissions: 0o700 (only owner can access)
  * File permissions: 0o600 (only owner can read/write)
  *
@@ -18,7 +18,7 @@ export const TOKEN_EXPIRY_BUFFER_MS = 240 * 60 * 1000;
  * Get credential directory path for the plugin
  */
 export function getCredDir(pluginId: string): string {
-  return `~/.clawdbot/extensions/${pluginId}`;
+  return `~/.openclaw/extensions/${pluginId}`;
 }
 
 /**
