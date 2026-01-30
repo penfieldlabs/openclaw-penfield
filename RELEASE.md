@@ -1,7 +1,7 @@
-# Release Notes: openclaw-penfield v1.0.4
+# Release Notes: openclaw-penfield v1.0.5
 
 **Date:** January 30, 2026
-**Type:** Patch Release (Rebrand)
+**Type:** Patch Release (Fix)
 
 ---
 
@@ -9,7 +9,7 @@
 
 Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API. This release delivers full feature parity with the Penfield MCP server while offering 4-5x performance improvement through native HTTP.
 
-**v1.0.4 is a complete rebrand from Clawdbot to OpenClaw.** Users must re-authenticate after updating.
+**v1.0.5 fixes the broken v1.0.4 npm package** (missing build artifacts). See v1.0.4 for rebrand details.
 
 ---
 

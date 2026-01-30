@@ -1,6 +1,6 @@
 {
   "name": "openclaw-penfield",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "description": "Native OpenClaw plugin for Penfield memory integration",
   "main": "dist/index.js",
