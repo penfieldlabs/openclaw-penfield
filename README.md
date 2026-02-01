@@ -32,7 +32,7 @@ Tell your agent to "Awaken with Penfield"
 
 Penfield is in **free beta**. Sign up for access:
 
-**[accounts.penfield.app/waitlist](https://accounts.penfield.app/waitlist)**
+**[portal.penfield.app/sign-up](https://portal.penfield.app/sign-up)**
 
 ## Features
 

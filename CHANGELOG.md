@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-02-01
+
+### Fixed
+- Prevent duplicate OpenClaw core installation when installing plugin
+  - Added `peerDependenciesMeta` with `optional: true` for `openclaw` dependency
+  - npm 7+ auto-installs peer dependencies by default; this fix tells npm to skip installation since OpenClaw is already present in the host environment
+
 ## [1.0.5] - 2026-01-30
 
 ### Fixed
@@ -76,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Personality
 - `penfield_awaken` - Load personality configuration
 
+[1.0.6]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.0.6
 [1.0.5]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.0.5
 [1.0.4]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.0.4
 [1.0.3]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.0.3

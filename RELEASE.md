@@ -1,6 +1,6 @@
-# Release Notes: openclaw-penfield v1.0.5
+# Release Notes: openclaw-penfield v1.0.6
 
-**Date:** January 30, 2026
+**Date:** February 1, 2026
 **Type:** Patch Release (Fix)
 
 ---
@@ -9,7 +9,7 @@
 
 Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API. This release delivers full feature parity with the Penfield MCP server while offering 4-5x performance improvement through native HTTP.
 
-**v1.0.5 fixes the broken v1.0.4 npm package** (missing build artifacts). See v1.0.4 for rebrand details.
+**v1.0.6 fixes duplicate OpenClaw core installation** when installing the plugin via npm. Added `peerDependenciesMeta` with `optional: true` to prevent npm 7+ from auto-installing the peer dependency (since OpenClaw is already present in the host environment).
 
 ---
 
