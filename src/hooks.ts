@@ -36,6 +36,17 @@ const REFLECT_MAX_CHARS = 30_000; // 30K char safety limit
 const REFLECT_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const REFLECT_RECENT_LIMIT = 20;
 
+const AUTH_WARNING_CONTEXT = [
+  "<penfield-action-required>",
+  "ACTION REQUIRED: The Penfield memory plugin is installed but NOT authenticated.",
+  "All Penfield tools are UNAVAILABLE until authenticated.",
+  "Immediately tell the user:",
+  "  1. Run:  openclaw penfield login",
+  "  2. Restart the OpenClaw gateway",
+  "Do not wait for the user to ask. Inform them NOW at the start of this conversation.",
+  "</penfield-action-required>",
+].join("\n");
+
 // ---------------------------------------------------------------------------
 // Module-level state
 // ---------------------------------------------------------------------------
@@ -91,8 +102,8 @@ function registerBeforeAgentStartHook(
         try {
           runtime = await ensureRuntime();
         } catch {
-          logger.debug?.("[penfield] runtime not ready, skipping hook");
-          return undefined;
+          logger.debug?.("[penfield] runtime not ready, injecting auth warning");
+          return { prependContext: AUTH_WARNING_CONTEXT };
         }
 
         // Fire awaken and reflect in parallel (both cached after first call)
@@ -114,6 +125,10 @@ function registerBeforeAgentStartHook(
         }
 
         if (parts.length === 0) {
+          // Both fetches returned null — if not authenticated, tell the agent
+          if (!runtime.authService.isAuthenticated()) {
+            return { prependContext: AUTH_WARNING_CONTEXT };
+          }
           return undefined;
         }
 

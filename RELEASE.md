@@ -1,7 +1,7 @@
-# Release Notes: openclaw-penfield v1.1.1
+# Release Notes: openclaw-penfield v1.1.2
 
 **Date:** February 9, 2026
-**Type:** Patch Release (Bug Fixes)
+**Type:** Patch Release (UX Improvement)
 
 ---
 
@@ -9,7 +9,7 @@
 
 Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API.
 
-**v1.1.1 fixes save_context and restore_context** — both tools were hitting deprecated API endpoints (410 Gone / 404). Rewritten to use the current `POST /api/v2/memories` approach with `memory_type: "checkpoint"`, fully interoperable with MCP server checkpoints. Also improves tool parameter documentation consistency.
+**v1.1.2 adds an auth warning for unauthenticated installs.** When the plugin is installed but not authenticated, the `before_agent_start` hook now injects an ACTION REQUIRED message into the agent's system prompt, telling it to instruct the user to run `openclaw penfield login`. Previously, unauthenticated installs silently failed with no feedback.
 
 ---
 
