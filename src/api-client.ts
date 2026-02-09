@@ -24,14 +24,30 @@ export class PenfieldApiClient {
 
     this.logger?.debug?.(`[penfield] ${method} ${endpoint}`);
 
-    const response = await fetch(url, {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === "AbortError") {
+        const msg = `Request timed out after 30s: ${method} ${endpoint}`;
+        this.logger?.error?.(`[penfield] ${msg}`);
+        throw new Error(msg);
+      }
+      throw err;
+    }
+    clearTimeout(timeoutId);
 
     // Handle rate limiting
     if (response.status === 429) {

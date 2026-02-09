@@ -1,7 +1,7 @@
 /**
  * Background authentication service for Penfield plugin
  *
- * Handles OAuth 2.0 token refresh silently in the background
+ * Handles OAuth 2.1 token refresh silently in the background
  * without agent involvement. Registered as an OpenClaw service.
  *
  * Supports RFC 8628 Device Code Flow and RFC 9700 Token Rotation.

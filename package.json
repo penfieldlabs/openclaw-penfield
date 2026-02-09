@@ -1,6 +1,6 @@
 {
   "name": "openclaw-penfield",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "type": "module",
   "description": "Native OpenClaw plugin for Penfield memory integration",
   "main": "dist/index.js",
@@ -39,16 +39,15 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
-    "eslint": "^8.56.0",
+    "eslint": "^9.39.2",
     "prettier": "^3.2.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.54.0"
   },
   "scripts": {
     "build": "tsc",
-    "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,json,md}\"",
     "typecheck": "tsc --noEmit"

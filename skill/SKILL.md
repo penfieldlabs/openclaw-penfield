@@ -8,27 +8,6 @@ metadata: {"openclaw":{"emoji":"🧠","install":[{"id":"npm","kind":"node","pack
 
 Persistent memory that compounds. Your agent remembers conversations, learns preferences, connects ideas, and picks up exactly where it left off—across sessions, days, and channels.
 
-## Install
-
-```
-openclaw plugins install openclaw-penfield
-openclaw penfield login
-openclaw gateway restart
-```
-
-Sign up: https://portal.penfield.app/sign-up
-
-## Every Session Starts Here
-
-Always do this first, before anything else:
-
-```
-penfield_awaken()
-penfield_reflect({ time_window: "7d" })
-```
-
-`awaken` loads your identity and personality context. `reflect` orients you on recent work. Without these, you're starting cold.
-
 ## Tools
 
 ### Memory

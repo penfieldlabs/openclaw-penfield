@@ -1,6 +1,7 @@
 import { DEFAULT_AUTH_URL, PenfieldConfigSchema, type PenfieldConfig } from "./src/config.js";
 import { createPenfieldRuntime, type PenfieldRuntime } from "./src/runtime.js";
 import { registerPenfieldTools } from "./src/tools/index.js";
+import { registerPenfieldHooks, resetHookCaches } from "./src/hooks.js";
 import { registerLoginCommand } from "./src/cli.js";
 import { createAuthService } from "./src/auth-service.js";
 import type { OpenClawPluginApi } from "./src/types.js";
@@ -12,11 +13,7 @@ const penfieldPlugin = {
 
   configSchema: {
     parse(value: unknown): PenfieldConfig {
-      // Handle undefined/null when no config section exists
-      if (value === undefined || value === null) {
-        return {};
-      }
-      return PenfieldConfigSchema.parse(value);
+      return PenfieldConfigSchema.parse(value ?? {});
     },
     uiHints: {
       enabled: {
@@ -30,6 +27,14 @@ const penfieldPlugin = {
       apiUrl: {
         label: "API URL",
         help: "Penfield API URL (default: https://api.penfield.app)",
+      },
+      autoAwaken: {
+        label: "Auto-Awaken",
+        help: "Inject Penfield identity briefing on every agent turn (default: true)",
+      },
+      autoOrient: {
+        label: "Auto-Orient",
+        help: "Inject recent Penfield memory context on every agent turn (default: true)",
       },
     },
   },
@@ -59,6 +64,9 @@ const penfieldPlugin = {
           config: cfg,
           authService,
           logger,
+        }).catch((err) => {
+          runtimePromise = null;
+          throw err;
         });
       }
       runtime = await runtimePromise;
@@ -84,6 +92,9 @@ const penfieldPlugin = {
     // Register all 16 tools
     registerPenfieldTools(api, ensureRuntime);
 
+    // Register lifecycle hooks (auto-awaken + auto-orient, injected every turn)
+    registerPenfieldHooks({ api, config: cfg, ensureRuntime, logger });
+
     // Register service for runtime lifecycle
     api.registerService({
       id: "penfield",
@@ -91,6 +102,7 @@ const penfieldPlugin = {
         logger.info("[penfield] Service started");
       },
       async stop(_ctx) {
+        resetHookCaches();
         if (runtime) {
           await runtime.stop();
           runtime = null;

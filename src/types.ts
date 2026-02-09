@@ -49,6 +49,26 @@ export interface OpenClawPluginCliContext {
   logger: PluginLogger;
 }
 
+// ---------------------------------------------------------------------------
+// Plugin Hook Event / Result Types
+// ---------------------------------------------------------------------------
+
+/** Event for before_agent_start hook */
+export interface PluginHookBeforeAgentStartEvent {
+  prompt: string;
+  messages?: unknown[];
+}
+
+/** Result for before_agent_start hook — prependContext is injected before the agent prompt */
+export interface PluginHookBeforeAgentStartResult {
+  systemPrompt?: string;
+  prependContext?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Plugin API
+// ---------------------------------------------------------------------------
+
 export interface OpenClawPluginApi {
   /** Plugin identifier */
   id: string;
@@ -91,6 +111,14 @@ export interface OpenClawPluginApi {
 
   /** Register service lifecycle */
   registerService(service: OpenClawPluginService): void;
+
+  /** Register a typed plugin lifecycle hook (always available, no config gate) */
+  on(
+    hookName: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OpenClaw dispatches typed events at runtime
+    handler: (...args: any[]) => any,
+    opts?: { priority?: number }
+  ): void;
 
   /** Runtime context */
   runtime?: {

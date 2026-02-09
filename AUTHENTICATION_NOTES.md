@@ -2,7 +2,7 @@
 
 ## RFC 8628 Device Code Flow Implementation
 
-The plugin implements OAuth 2.0 Device Code Flow (RFC 8628) with dynamic endpoint discovery (RFC 8414).
+The plugin implements OAuth 2.1 Device Code Flow (RFC 8628) with dynamic endpoint discovery (RFC 8414).
 
 ### How It Works
 
@@ -52,7 +52,7 @@ File permissions: `0o600` (owner read/write only)
 {
   "plugins": {
     "entries": {
-      "penfield": {
+      "openclaw-penfield": {
         "enabled": true
       }
     }
@@ -65,7 +65,7 @@ File permissions: `0o600` (owner read/write only)
 {
   "plugins": {
     "entries": {
-      "penfield": {
+      "openclaw-penfield": {
         "enabled": true,
         "config": {
           "authUrl": "https://auth-dev.penfield.app",

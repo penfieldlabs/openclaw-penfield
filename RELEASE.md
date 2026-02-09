@@ -1,15 +1,15 @@
-# Release Notes: openclaw-penfield v1.0.6
+# Release Notes: openclaw-penfield v1.1.0
 
-**Date:** February 1, 2026
-**Type:** Patch Release (Fix)
+**Date:** February 8, 2026
+**Type:** Minor Release (New Features)
 
 ---
 
 ## Overview
 
-Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API. This release delivers full feature parity with the Penfield MCP server while offering 4-5x performance improvement through native HTTP.
+Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API. This release adds automatic lifecycle hooks that make Penfield a seamless drop-in memory backend for OpenClaw.
 
-**v1.0.6 fixes duplicate OpenClaw core installation** when installing the plugin via npm. Added `peerDependenciesMeta` with `optional: true` to prevent npm 7+ from auto-installing the peer dependency (since OpenClaw is already present in the host environment).
+**v1.1.0 adds lifecycle hooks** — identity briefing injection, automatic memory recall, and context checkpointing — using OpenClaw's typed plugin hook system (`api.on()`).
 
 ---
 
@@ -34,12 +34,12 @@ Native OpenClaw plugin providing direct integration with Penfield's memory and k
 - In-memory credential caching
 
 ### Authentication
-- OAuth 2.0 Device Code Flow (RFC 8628)
+- OAuth 2.1 Device Code Flow (RFC 8628)
 - Automatic Dynamic Client Registration (DCR)
 - Token rotation with automatic refresh (RFC 9700)
 - 240-minute expiry buffer
 
-### Memory Tools (6)
+### Memory Tools (5)
 | Tool | Description |
 |------|-------------|
 | `penfield_store` | Store a new memory (max 10,000 chars) |
@@ -48,7 +48,7 @@ Native OpenClaw plugin providing direct integration with Penfield's memory and k
 | `penfield_fetch` | Get memory by ID |
 | `penfield_update_memory` | Update existing memory |
 
-### Knowledge Graph Tools (3)
+### Knowledge Graph Tools (2)
 | Tool | Description |
 |------|-------------|
 | `penfield_connect` | Create relationships (24 types) |

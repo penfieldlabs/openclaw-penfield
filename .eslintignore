@@ -1,7 +1,0 @@
-# Generated build output
-dist/
-*.d.ts
-*.js.map
-
-# Dependencies
-node_modules/

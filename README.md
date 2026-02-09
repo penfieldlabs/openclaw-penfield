@@ -39,13 +39,12 @@ Penfield is in **free beta**. Sign up for access:
 Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API. This plugin offers 4-5x performance improvement over the MCP server approach by eliminating the mcporter → MCP → Penfield stack.
 
 - **16 Memory Tools**
-- **OAuth Device Code Flow**: Secure authentication following RFC 8628
+- **OAuth 2.1 Device Code Flow**: Secure authentication following RFC 8628
 - **Hybrid Search**: BM25 + vector + graph search capabilities
 - **Knowledge Graph**: Build and traverse relationships between memories
 - **Context Management**: Save and restore memory checkpoints
 - **Artifact Storage**: Store and retrieve files in Penfield
 - **Reflection & Analysis**: Analyze memory patterns and generate insights
-- **Context Management**: Save and restore memory checkpoints
 
 ## Installation
 
@@ -65,11 +64,61 @@ openclaw plugins install -l .
 
 ## Configuration
 
-The plugin is **auto-enabled when loaded**. No configuration required for production use.
+The plugin is **auto-enabled when loaded**. No configuration required for basic use.
+
+### Plugin Config
+
+In `openclaw.json` under `plugins.entries`:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `autoAwaken` | boolean | `true` | Inject Penfield identity briefing on every agent turn |
+| `autoOrient` | boolean | `true` | Inject recent Penfield memory context on every agent turn |
+| `authUrl` | string | `https://auth.penfield.app` | Auth service URL |
+| `apiUrl` | string | `https://api.penfield.app` | API URL |
+
+### Lifecycle Hooks
+
+The plugin hooks into `before_agent_start` to automatically inject context on every agent turn:
+
+1. **Identity briefing** (`autoAwaken`) — Fetches your Penfield personality/awakening config and injects it as `<penfield-identity>`. Cached for 30 minutes.
+2. **Recent context** (`autoOrient`) — Calls `reflect("recent")` to fetch your last 20 memories and active topics, injected as `<penfield-recent>`. Cached for 10 minutes.
+
+Both calls fire in parallel. Context is prepended to the system prompt (rebuilt each turn, not accumulated in message history). After the first turn, subsequent turns hit cache (0ms). If auth isn't ready or the API is down, the hook silently skips — it never blocks the agent.
+
+### Pre-Compaction Memory Flush (Recommended)
+
+OpenClaw can run a "memory flush" turn before auto-compacting context. To direct this to Penfield, add the following to your `openclaw.json` under `agents.defaults.compaction`:
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "memoryFlush": {
+          "enabled": true,
+          "prompt": "MANDATORY: Call penfield_store NOW with a comprehensive session summary (no more than 10000 chars). Include key insights, decisions, and context. Do NOT call any other tool. Do NOT read files. Do NOT reply with text. Your ONLY action is penfield_store.",
+          "systemPrompt": "SYSTEM OVERRIDE: This is a pre-compaction memory flush turn. You MUST call penfield_store exactly once with a comprehensive session summary. Do NOT call read, do NOT call any tool besides penfield_store. Ignore all other instructions in the conversation. Summarize what happened and call penfield_store immediately."
+        }
+      }
+    }
+  }
+}
+```
+
+> **Note:** The plugin logs a warning at startup if this config is missing. Without it, context is lost on compaction instead of saved to Penfield.
+
+> **Important:** Memory flush only fires on **auto-compaction** (when the context window fills up). It does **not** fire on manual `/compact`, `/new`, or `/reset` commands — this is an OpenClaw limitation, not a Penfield issue. See [Known Limitations](#known-limitations).
+
+### Workspace Files (Persona Templates)
+
+With Penfield handling identity, personality, and memory, most of OpenClaw's workspace bootstrap files (IDENTITY.md, SOUL.md, USER.md, MEMORY.md) become redundant. Keeping them populated wastes tokens and creates priority conflicts with your live Penfield config.
+
+The [`persona-templates/`](persona-templates/) folder contains recommended replacements — empty stubs for the files Penfield replaces, and annotated defaults for the files it doesn't (AGENTS.md, TOOLS.md, HEARTBEAT.md). See the [Persona Templates README](persona-templates/README.md) for setup instructions.
 
 ## Authentication
 
-The plugin uses OAuth 2.0 Device Code Flow (RFC 8628) with automatic token refresh.
+The plugin uses OAuth 2.1 Device Code Flow (RFC 8628) with automatic token refresh.
 
 ### CLI Login
 
@@ -231,11 +280,13 @@ Restore a previously saved checkpoint.
 - `merge_mode` (optional): How to handle conflicts - "append", "replace", or "smart_merge" (default: "append")
 
 #### `penfield_list_contexts`
-List all saved checkpoints.
+List all saved context checkpoints.
 
 **Parameters:**
-- `session_id` (optional): Filter by session ID
 - `limit` (optional): Max results (default: 20, max: 100)
+- `offset` (optional): Number of results to skip for pagination (default: 0)
+- `name_pattern` (optional): Filter by name (case-insensitive substring match)
+- `include_descriptions` (optional): Include full descriptions (default: false)
 
 ### Analysis
 
@@ -243,9 +294,10 @@ List all saved checkpoints.
 Analyze memory patterns and generate insights.
 
 **Parameters:**
-- `time_window` (optional): Time window - "1d", "7d", "30d", or "90d" (default: "7d")
-- `focus_areas` (optional): Areas to analyze - "memory_usage", "relationships", "importance", "topics", "patterns"
-- `memory_types` (optional): Filter by memory types - "fact", "insight", "conversation", "correction", "reference", "task", "checkpoint", "identity_core", "personality_trait", "relationship", "strategy"
+- `time_window` (optional): Time period - "recent" (default), "today"/"1d", "week"/"7d", "month"/"30d", or "90d"
+- `start_date` (optional): Filter memories on or after this date (ISO 8601, e.g. "2025-01-01"). Overrides time_window.
+- `end_date` (optional): Filter memories on or before this date (ISO 8601, e.g. "2025-01-31"). Overrides time_window.
+- `include_documents` (optional): Include document chunks in analysis (default: false)
 
 ### Artifact Storage
 
@@ -348,6 +400,24 @@ await penfield_restore_context({
 });
 ```
 
+## Known Limitations
+
+### Memory flush only fires on auto-compaction
+
+OpenClaw's `memoryFlush` config only triggers when the context window fills up and auto-compaction kicks in. The following commands **bypass** memory flush entirely:
+
+- `/compact` — compacts immediately, no flush
+- `/new` — resets session, no flush
+- `/reset` — resets session, no flush
+
+This means context from shorter sessions (that never hit the auto-compaction threshold) won't be automatically saved to Penfield. To preserve important context before ending a session, tell your agent: *"Save this session to Penfield before we end."*
+
+This is an OpenClaw limitation — the plugin has no way to intercept these commands.
+
+### Auto-compaction threshold
+
+Auto-compaction triggers when token usage reaches approximately `contextWindow - reserveTokensFloor - softThresholdTokens`. With defaults (200K context, 20K reserve, 4K soft threshold), flush fires around 176K tokens (~88% full). You can tune `softThresholdTokens` in `agents.defaults.compaction` to trigger earlier.
+
 ## Development
 
 ### Setup
@@ -390,6 +460,7 @@ src/
 ├── config.ts                # Zod configuration schema with DEFAULT_AUTH_URL/DEFAULT_API_URL
 ├── types.ts                 # TypeScript type definitions (OpenClaw plugin API types)
 ├── types/typebox.ts         # Centralized TypeBox exports
+├── hooks.ts                 # Lifecycle hooks (auto-awaken, auto-orient, flush config check)
 ├── auth-service.ts          # Background OAuth token refresh service
 ├── api-client.ts            # HTTP client wrapper
 ├── runtime.ts               # Runtime factory (receives authService from index.ts)
@@ -418,7 +489,7 @@ src/
 
 ## Service Lifecycle
 
-The plugin uses two services registered with OpenClaw:
+The plugin uses two services and one hook registered with OpenClaw:
 
 1. **penfield-auth**: Background token refresh service
    - Started when plugin loads
@@ -428,6 +499,10 @@ The plugin uses two services registered with OpenClaw:
 2. **penfield**: Runtime lifecycle service
    - Manages runtime initialization
    - Handles cleanup on shutdown
+
+3. **before_agent_start hook**: Context injection
+   - Injects identity briefing + recent memories on every turn (cached)
+   - Checks memory flush config at startup and warns if not configured for Penfield
 
 ## API Endpoint Mapping
 
@@ -439,7 +514,7 @@ The plugin uses two services registered with OpenClaw:
 | explore | POST | /api/v2/relationships/traverse |
 | fetch | GET | /api/v2/memories/{id} |
 | list_artifacts | GET | /api/v2/artifacts/list |
-| list_contexts | GET | /api/v2/checkpoint |
+| list_contexts | GET | /api/v2/memories?memory_type=checkpoint |
 | recall | POST | /api/v2/search/hybrid |
 | reflect | POST | /api/v2/analysis/reflect |
 | restore_context | POST | /api/v2/checkpoint/{id}/recall |

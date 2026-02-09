@@ -14,6 +14,8 @@ export { DEFAULT_AUTH_URL, DEFAULT_API_URL };
 export const PenfieldConfigSchema = z.object({
   authUrl: z.string().optional(),
   apiUrl: z.string().optional(),
+  autoAwaken: z.boolean().default(true),
+  autoOrient: z.boolean().default(true),
 }).strict();
 
 export type PenfieldConfig = z.infer<typeof PenfieldConfigSchema>;

@@ -6,7 +6,9 @@
     "additionalProperties": false,
     "properties": {
       "authUrl": { "type": "string" },
-      "apiUrl": { "type": "string" }
+      "apiUrl": { "type": "string" },
+      "autoAwaken": { "type": "boolean", "default": true },
+      "autoOrient": { "type": "boolean", "default": true }
     }
   }
 }
