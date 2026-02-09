@@ -10,7 +10,7 @@ import { validateUuid } from "../validation.js";
 
 export const UpdateMemoryToolSchema = Type.Object({
   memory_id: Type.String({
-    description: "Memory ID to update",
+    description: "Memory ID to update (UUID format)",
   }),
   content: Type.Optional(
     Type.String({

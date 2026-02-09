@@ -203,8 +203,9 @@ penfield_connect({
 
 ```
 penfield_save_context({
-  memory_ids: [discovery.id, correction.id, initial_report.id],
-  session_id: "deployment-investigation-2026-02"
+  name: "deployment-investigation-2026-02",
+  description: "Investigated deployment timeout issues. memory_id: " + discovery.id,
+  memory_ids: [discovery.id, correction.id, initial_report.id]
 })
 ```
 
@@ -212,8 +213,7 @@ Next session or different agent:
 
 ```
 penfield_restore_context({
-  checkpoint_id: "checkpoint-uuid",
-  merge_mode: "append"
+  name: "deployment-investigation-2026-02"
 })
 ```
 

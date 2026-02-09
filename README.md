@@ -211,13 +211,13 @@ Semantic search variant (higher vector weight).
 Get a specific memory by ID.
 
 **Parameters:**
-- `memory_id` (required): Memory ID to fetch
+- `memory_id` (required): Memory ID to fetch (UUID format)
 
 #### `penfield_update_memory`
 Update an existing memory.
 
 **Parameters:**
-- `memory_id` (required): Memory ID to update
+- `memory_id` (required): Memory ID to update (UUID format)
 - `content` (optional): Updated content
 - `memory_type` (optional): Updated type
 - `importance` (optional): Updated importance
@@ -230,8 +230,8 @@ Update an existing memory.
 Create a relationship between two memories.
 
 **Parameters:**
-- `from_memory_id` (required): Source memory ID
-- `to_memory_id` (required): Target memory ID
+- `from_memory_id` (required): Source memory ID (UUID format)
+- `to_memory_id` (required): Target memory ID (UUID format)
 - `relationship_type` (required): Type of relationship
   - **Knowledge Evolution**: supersedes, updates, evolution_of
   - **Evidence & Support**: supports, contradicts, disputes
@@ -257,7 +257,7 @@ Create a relationship between two memories.
 Traverse the knowledge graph from a starting memory.
 
 **Parameters:**
-- `start_memory_id` (required): Starting memory ID
+- `start_memory_id` (required): Starting memory ID (UUID format)
 - `max_depth` (optional): Max traversal depth (default: 3, max: 10)
 - `relationship_types` (optional): Filter by relationship types
 - `min_strength` (optional): Minimum relationship strength
@@ -265,19 +265,24 @@ Traverse the knowledge graph from a starting memory.
 ### Context Management
 
 #### `penfield_save_context`
-Save a checkpoint of current memory state.
+Save a cognitive state checkpoint for handoff to another agent or future session.
 
 **Parameters:**
-- `memory_ids` (required): Array of memory IDs to save
-- `session_id` (optional): Session identifier
+- `name` (required): Name for this context checkpoint (max 200 chars)
+- `description` (optional): Detailed cognitive handoff description with memory references (max 10,000 chars). Include what was investigated, key discoveries, current hypotheses, open questions, and suggested next steps. Use `memory_id: <uuid>` patterns for reliable memory linking.
+- `memory_ids` (optional): Explicit array of memory IDs to include in the checkpoint (UUID format)
+
+**Memory linking** works three ways (combined, deduplicated):
+1. Explicit `memory_ids` parameter — always linked
+2. `memory_id: <uuid>` patterns extracted from description text — always linked
+3. Hybrid search using description as query — best-effort additional context
 
 #### `penfield_restore_context`
-Restore a previously saved checkpoint.
+Restore a previously saved context checkpoint by name, UUID, or "awakening" for personality briefing.
 
 **Parameters:**
-- `checkpoint_id` (required): Checkpoint ID to restore
-- `full_restore` (optional): Create new copies of memories instead of referencing existing (default: false)
-- `merge_mode` (optional): How to handle conflicts - "append", "replace", or "smart_merge" (default: "append")
+- `name` (required): Name or ID of context to restore. Can be a context name (exact match), a context UUID, or "awakening" for personality briefing.
+- `limit` (optional): Maximum number of memories to restore (default: 20, max: 100)
 
 #### `penfield_list_contexts`
 List all saved context checkpoints.
@@ -387,16 +392,26 @@ const graph = await penfield_explore({
 ### Context Checkpoints
 
 ```typescript
-// Save context
+// Save context with explicit memory IDs
 const checkpoint = await penfield_save_context({
-  memory_ids: ["mem_1", "mem_2", "mem_3"],
-  session_id: "session_123"
+  name: "API investigation",
+  description: "Investigated timeout issues in the payment API.\nmemory_id: 550e8400-e29b-41d4-a716-446655440000",
+  memory_ids: ["550e8400-e29b-41d4-a716-446655440000", "6ba7b810-9dad-11d1-80b4-00c04fd430c8"]
 });
 
 // Restore later
 await penfield_restore_context({
-  checkpoint_id: checkpoint.id,
-  full_restore: true
+  name: "API investigation"
+});
+
+// Restore by UUID
+await penfield_restore_context({
+  name: "550e8400-e29b-41d4-a716-446655440000"
+});
+
+// Load personality briefing
+await penfield_restore_context({
+  name: "awakening"
 });
 ```
 
@@ -517,10 +532,10 @@ The plugin uses two services and one hook registered with OpenClaw:
 | list_contexts | GET | /api/v2/memories?memory_type=checkpoint |
 | recall | POST | /api/v2/search/hybrid |
 | reflect | POST | /api/v2/analysis/reflect |
-| restore_context | POST | /api/v2/checkpoint/{id}/recall |
+| restore_context | GET | /api/v2/memories/{id}, /api/v2/memories?memory_type=checkpoint, /api/v2/personality/awakening |
 | retrieve_artifact | GET | /api/v2/artifacts |
 | save_artifact | POST | /api/v2/artifacts |
-| save_context | POST | /api/v2/checkpoint/create |
+| save_context | POST | /api/v2/memories (memory_type=checkpoint), /api/v2/search/hybrid |
 | search | POST | /api/v2/search/hybrid |
 | store | POST | /api/v2/memories |
 | update_memory | PUT | /api/v2/memories/{id} |

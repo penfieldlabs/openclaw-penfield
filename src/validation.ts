@@ -9,13 +9,21 @@
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Check whether a string is a valid UUID format (non-throwing).
+ * Use for conditional checks where invalid input should be skipped, not rejected.
+ */
+export function isUuid(value: string): boolean {
+  return UUID_REGEX.test(value);
+}
+
+/**
  * Validate that a string is a valid UUID format.
  * Prevents path traversal attacks in URL interpolation.
  *
  * @throws Error if not a valid UUID
  */
 export function validateUuid(value: string, fieldName: string): void {
-  if (!UUID_REGEX.test(value)) {
+  if (!isUuid(value)) {
     throw new Error(`Invalid ${fieldName}: must be a valid UUID format`);
   }
 }

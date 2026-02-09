@@ -4,7 +4,7 @@ import { validateUuid } from "../validation.js";
 
 export const ExploreToolSchema = Type.Object({
   start_memory_id: Type.String({
-    description: "Starting memory ID for graph traversal",
+    description: "Starting memory ID for graph traversal (UUID format)",
   }),
   max_depth: Type.Optional(
     Type.Number({

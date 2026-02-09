@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-02-09
+
+### Fixed
+- `penfield_save_context` rewritten — old endpoint (`POST /api/v2/checkpoint/create`) returned 410 Gone. Now stores checkpoints as `POST /api/v2/memories` with `memory_type: "checkpoint"`, matching MCP server format exactly. Params: `name` (required), `description` (optional), `memory_ids` (optional). Memory linking via three combined sources: explicit `memory_ids` parameter, `memory_id: <uuid>` patterns extracted from description, and hybrid search. Checkpoint format is fully interoperable with MCP server checkpoints.
+- `penfield_restore_context` rewritten — old endpoint (`POST /api/v2/checkpoint/{id}/recall`) returned 404. Now resolves checkpoints by name, UUID, or "awakening" keyword. Fetches referenced memories individually. New params: `name` (required), `limit` (optional).
+- Updated tool descriptions for save_context and restore_context
+- All memory ID parameters now consistently document "(UUID format)" in tool descriptions (fetch, update_memory, explore, save_context — aligning with connect which already had it)
+- Memory flush config warning wording improved (provides actionable instructions)
+
 ## [1.1.0] - 2026-02-09
 
 ### Added
@@ -114,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Personality
 - `penfield_awaken` - Load personality configuration
 
+[1.1.1]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.1.1
 [1.1.0]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.1.0
 [1.0.6]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.0.6
 [1.0.5]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.0.5

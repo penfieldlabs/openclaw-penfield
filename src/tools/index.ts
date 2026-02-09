@@ -122,7 +122,7 @@ export function registerPenfieldTools(
   registerTool(
     "penfield_save_context",
     "Save Context",
-    "Save a checkpoint of current memory state",
+    "Save a cognitive state checkpoint with name and description for handoff to another agent or future session",
     SaveContextToolSchema,
     executeSaveContextTool
   );
@@ -130,7 +130,7 @@ export function registerPenfieldTools(
   registerTool(
     "penfield_restore_context",
     "Restore Context",
-    "Restore a previously saved checkpoint",
+    "Restore a previously saved context checkpoint by name, UUID, or 'awakening' for personality briefing",
     RestoreContextToolSchema,
     executeRestoreContextTool
   );

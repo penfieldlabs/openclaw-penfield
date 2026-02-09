@@ -278,7 +278,7 @@ function checkMemoryFlushConfig(api: OpenClawPluginApi, logger: PluginLogger): v
         `\n` +
         `  ${MEMORY_FLUSH_JSON.split("\n").join("\n  ")}\n` +
         `\n` +
-        `  Or tell your agent: "Update ~/.openclaw/openclaw.json to configure memory flush for Penfield"`,
+        `  Or provide your agent with the JSON block above and ask it to update ~/.openclaw/openclaw.json to configure memory flush for Penfield`,
     );
   } catch {
     // Config inspection failed — non-critical, skip silently

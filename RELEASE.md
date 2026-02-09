@@ -1,15 +1,15 @@
-# Release Notes: openclaw-penfield v1.1.0
+# Release Notes: openclaw-penfield v1.1.1
 
-**Date:** February 8, 2026
-**Type:** Minor Release (New Features)
+**Date:** February 9, 2026
+**Type:** Patch Release (Bug Fixes)
 
 ---
 
 ## Overview
 
-Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API. This release adds automatic lifecycle hooks that make Penfield a seamless drop-in memory backend for OpenClaw.
+Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API.
 
-**v1.1.0 adds lifecycle hooks** — identity briefing injection, automatic memory recall, and context checkpointing — using OpenClaw's typed plugin hook system (`api.on()`).
+**v1.1.1 fixes save_context and restore_context** — both tools were hitting deprecated API endpoints (410 Gone / 404). Rewritten to use the current `POST /api/v2/memories` approach with `memory_type: "checkpoint"`, fully interoperable with MCP server checkpoints. Also improves tool parameter documentation consistency.
 
 ---
 
@@ -57,8 +57,8 @@ Native OpenClaw plugin providing direct integration with Penfield's memory and k
 ### Context Management (3)
 | Tool | Description |
 |------|-------------|
-| `penfield_save_context` | Save checkpoint of memory state |
-| `penfield_restore_context` | Restore checkpoint |
+| `penfield_save_context` | Save cognitive state checkpoint for agent handoff |
+| `penfield_restore_context` | Restore checkpoint by name, UUID, or "awakening" |
 | `penfield_list_contexts` | List saved checkpoints |
 
 ### Analysis (1)

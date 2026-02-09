@@ -4,7 +4,7 @@ import { validateUuid } from "../validation.js";
 
 export const FetchToolSchema = Type.Object({
   memory_id: Type.String({
-    description: "Memory ID to fetch",
+    description: "Memory ID to fetch (UUID format)",
   }),
 }, { additionalProperties: false });
 
