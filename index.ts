@@ -9,7 +9,7 @@ import type { OpenClawPluginApi } from "./src/types.js";
 const penfieldPlugin = {
   id: "openclaw-penfield",
   name: "Penfield Memory",
-  description: "Native Penfield memory integration with 16 tools for knowledge management",
+  description: "Native Penfield memory integration with 17 tools for knowledge management",
 
   configSchema: {
     parse(value: unknown): PenfieldConfig {
@@ -89,7 +89,7 @@ const penfieldPlugin = {
       },
     });
 
-    // Register all 16 tools
+    // Register all 17 tools
     registerPenfieldTools(api, ensureRuntime);
 
     // Register lifecycle hooks (auto-awaken + auto-orient, injected every turn)

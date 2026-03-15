@@ -1,5 +1,6 @@
-import { Type, MemoryTypeSchema, ImportanceScoreSchema } from "../types/typebox.js";
+import { Type, MemoryTypeSchema, ImportanceScoreSchema, StartDateSchema, EndDateSchema, SortOrderSchema, MaxContentLengthSchema } from "../types/typebox.js";
 import type { PenfieldApiClient } from "../api-client.js";
+import { compactRecallResponse } from "../response-compact.js";
 
 export const RecallToolSchema = Type.Object({
   query: Type.String({
@@ -56,6 +57,10 @@ export const RecallToolSchema = Type.Object({
       default: true,
     })
   ),
+  start_date: Type.Optional(StartDateSchema),
+  end_date: Type.Optional(EndDateSchema),
+  sort: Type.Optional(SortOrderSchema),
+  max_content_length: Type.Optional(MaxContentLengthSchema),
 }, { additionalProperties: false });
 
 export async function executeRecallTool(
@@ -72,12 +77,20 @@ export async function executeRecallTool(
     throw new Error(`Weights must sum to 1.0 (got ${sum})`);
   }
 
-  const response = await apiClient.post("/api/v2/search/hybrid", params);
+  // Separate plugin-only params from API params
+  const { sort, max_content_length, ...apiParams } = params;
+
+  const response = await apiClient.post("/api/v2/search/hybrid", apiParams);
+  const compact = compactRecallResponse(response, params.query, {
+    sort,
+    maxContentLength: max_content_length,
+  });
+
   return {
     content: [
       {
         type: "text",
-        text: JSON.stringify(response, null, 2),
+        text: JSON.stringify(compact, null, 2),
       },
     ],
     details: response,

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-03-13
+
+### Added
+- `penfield_disconnect` tool — remove a relationship between two memories via `DELETE /api/v2/relationships/between`. Mirrors the MCP disconnect tool. Parameters: `from_memory_id` (UUID), `to_memory_id` (UUID). Returns 204 on success, 404 if no relationship exists.
+- Integration test for disconnect tool (`tests/disconnect-tool.sh`) — creates memories, connects, disconnects, verifies cleanup, deletes test data
+- Response compaction for `penfield_recall`, `penfield_search`, `penfield_reflect`, and `penfield_explore` — strips debug fields (score_breakdown, search_metadata, knowledge_cloud, analyzed_query) and returns only essential fields, mirroring MCP server patterns. Reduces context token usage by 60-80% on search responses.
+- `start_date` and `end_date` parameters on `penfield_recall` and `penfield_search` — ISO 8601 date filters passed through to the API's hybrid search endpoint
+- `sort` parameter on `penfield_recall` and `penfield_search` — client-side sort by `"relevance"` (default), `"created_desc"`, or `"created_asc"`
+- `max_content_length` parameter on `penfield_recall` and `penfield_search` — truncate memory content to N characters (50-10,000), with note to use `penfield_fetch` for full content
+- `src/response-compact.ts` — shared compaction utilities: `compactRecallResponse`, `compactReflectResponse`, `compactExploreResponse`
+
+### Fixed
+- `api-client.ts`: Handle HTTP 204 No Content responses without attempting to parse an empty body. Previously, `response.json()` would throw `SyntaxError` on 204 responses from DELETE endpoints (`/api/v2/relationships/between`, `/api/v2/artifacts`). Now returns `{}` for 204 status.
+- `penfield_disconnect`: Now returns a confirmation response (`success`, `from_id`, `to_id`, `message`) instead of empty `{}` on success
+- `penfield_explore`: Returns a descriptive message when no connections exist (`"No connections found from this memory"`) instead of a bare empty paths array
+
+### Changed
+- Tool count: 16 → 17
+
 ## [1.1.2] - 2026-02-09
 
 ### Added
@@ -130,6 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Personality
 - `penfield_awaken` - Load personality configuration
 
+[2.0.0]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v2.0.0
 [1.1.2]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.1.2
 [1.1.1]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.1.1
 [1.1.0]: https://github.com/penfieldlabs/openclaw-penfield/releases/tag/v1.1.0

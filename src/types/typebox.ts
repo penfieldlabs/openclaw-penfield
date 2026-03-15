@@ -61,6 +61,33 @@ export const MemoryTypeSchema = Type.Union([
   Type.Literal("strategy"),
 ], { description: "Type of memory" });
 
+// Shared search parameter schemas (used by recall + search)
+export const StartDateSchema = Type.String({
+  description: "Filter memories created on or after this date (ISO 8601, e.g. '2025-01-01')",
+});
+
+export const EndDateSchema = Type.String({
+  description: "Filter memories created on or before this date (ISO 8601, e.g. '2025-12-31')",
+});
+
+export const SortOrderSchema = Type.Union(
+  [
+    Type.Literal("relevance"),
+    Type.Literal("created_desc"),
+    Type.Literal("created_asc"),
+  ],
+  {
+    description: 'Sort order: "relevance" (default), "created_desc", or "created_asc"',
+    default: "relevance",
+  }
+);
+
+export const MaxContentLengthSchema = Type.Number({
+  description: "Truncate memory content to this many characters. Full content available via penfield_fetch.",
+  minimum: 50,
+  maximum: 10000,
+});
+
 export const RelationshipTypeSchema = Type.Union([
   // Knowledge Evolution
   Type.Literal("supersedes"),

@@ -64,6 +64,10 @@ export class PenfieldApiClient {
       throw new Error(errorMessage);
     }
 
+    if (response.status === 204) {
+      return {} as T;
+    }
+
     const data = await response.json();
     return (data.data || data) as T;
   }

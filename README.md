@@ -38,7 +38,7 @@ Penfield is in **free beta**. Sign up for access:
 
 Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API. This plugin offers 4-5x performance improvement over the MCP server approach by eliminating the mcporter → MCP → Penfield stack.
 
-- **16 Memory Tools**
+- **17 Memory Tools**
 - **OAuth 2.1 Device Code Flow**: Secure authentication following RFC 8628
 - **Hybrid Search**: BM25 + vector + graph search capabilities
 - **Knowledge Graph**: Build and traverse relationships between memories
@@ -65,6 +65,20 @@ openclaw plugins install -l .
 ## Configuration
 
 The plugin is **auto-enabled when loaded**. No configuration required for basic use.
+
+### Plugin Allowlist
+
+OpenClaw recommends explicitly trusting non-bundled plugins. If you see `plugins.allow is empty` warnings on startup, add the plugin to your allowlist in `openclaw.json`:
+
+```json
+{
+  "plugins": {
+    "allow": ["openclaw-penfield"]
+  }
+}
+```
+
+Once the `allow` array exists, future `openclaw plugins install` and `openclaw plugins enable` commands will automatically append to it.
 
 ### Plugin Config
 
@@ -175,7 +189,7 @@ Store a new memory in Penfield.
 ```
 
 #### `penfield_recall`
-Hybrid search using BM25 + vector + graph.
+Hybrid search using BM25 + vector + graph. Returns compact responses (essential fields only).
 
 **Parameters:**
 - `query` (required): Search query (1-4,000 chars)
@@ -186,6 +200,10 @@ Hybrid search using BM25 + vector + graph.
 - `memory_types` (optional): Filter by types
 - `importance_threshold` (optional): Minimum importance
 - `enable_graph_expansion` (optional): Enable traversal (default: true)
+- `start_date` (optional): Filter memories created on or after this date (ISO 8601, e.g. "2025-01-01")
+- `end_date` (optional): Filter memories created on or before this date (ISO 8601, e.g. "2025-12-31")
+- `sort` (optional): Sort order — "relevance" (default), "created_desc", or "created_asc"
+- `max_content_length` (optional): Truncate content to N characters (50-10,000). Full content available via `penfield_fetch`.
 
 **Example:**
 ```typescript
@@ -194,18 +212,23 @@ Hybrid search using BM25 + vector + graph.
   "limit": 10,
   "vector_weight": 0.5,
   "bm25_weight": 0.3,
-  "graph_weight": 0.2
+  "graph_weight": 0.2,
+  "start_date": "2025-06-01"
 }
 ```
 
 #### `penfield_search`
-Semantic search variant (higher vector weight).
+Semantic search variant (higher vector weight). Returns compact responses (essential fields only).
 
 **Parameters:**
-- `query` (required): Search query
-- `limit` (optional): Max results
+- `query` (required): Search query (1-4,000 chars)
+- `limit` (optional): Max results (default: 20, max: 100)
 - `memory_types` (optional): Filter by types
 - `importance_threshold` (optional): Minimum importance
+- `start_date` (optional): Filter memories created on or after this date (ISO 8601)
+- `end_date` (optional): Filter memories created on or before this date (ISO 8601)
+- `sort` (optional): Sort order — "relevance" (default), "created_desc", or "created_asc"
+- `max_content_length` (optional): Truncate content to N characters (50-10,000)
 
 #### `penfield_fetch`
 Get a specific memory by ID.
@@ -250,6 +273,21 @@ Create a relationship between two memories.
   "to_memory_id": "20413926-2446-4f88-bfd6-749b37969f34",
   "relationship_type": "supports",
   "strength": 0.9
+}
+```
+
+#### `penfield_disconnect`
+Remove a relationship between two memories.
+
+**Parameters:**
+- `from_memory_id` (required): Source memory ID (UUID format)
+- `to_memory_id` (required): Target memory ID (UUID format)
+
+**Example:**
+```typescript
+{
+  "from_memory_id": "22618318-8d82-49c9-8bb8-1cf3a61b3c75",
+  "to_memory_id": "20413926-2446-4f88-bfd6-749b37969f34"
 }
 ```
 
@@ -478,18 +516,20 @@ src/
 ├── hooks.ts                 # Lifecycle hooks (auto-awaken, auto-orient, flush config check)
 ├── auth-service.ts          # Background OAuth token refresh service
 ├── api-client.ts            # HTTP client wrapper
+├── response-compact.ts      # Response compaction (mirrors MCP field-stripping)
 ├── runtime.ts               # Runtime factory (receives authService from index.ts)
 ├── store.ts                 # Credential file I/O with TOKEN_EXPIRY_BUFFER_MS
 ├── cli.ts                   # CLI command registration (penfield login)
 ├── device-flow.ts           # RFC 8628 Device Code Flow implementation
 └── tools/
-    ├── index.ts             # Tool registry (16 tools)
+    ├── index.ts             # Tool registry (17 tools)
     ├── store.ts             # penfield_store
     ├── recall.ts            # penfield_recall
     ├── search.ts            # penfield_search
     ├── fetch.ts             # penfield_fetch
     ├── update-memory.ts     # penfield_update_memory
     ├── connect.ts           # penfield_connect
+    ├── disconnect.ts        # penfield_disconnect
     ├── explore.ts           # penfield_explore
     ├── save-context.ts      # penfield_save_context
     ├── restore-context.ts   # penfield_restore_context
@@ -525,6 +565,7 @@ The plugin uses two services and one hook registered with OpenClaw:
 |------|--------|----------|
 | awaken | GET | /api/v2/personality/awakening |
 | connect | POST | /api/v2/relationships |
+| disconnect | DELETE | /api/v2/relationships/between |
 | delete_artifact | DELETE | /api/v2/artifacts |
 | explore | POST | /api/v2/relationships/traverse |
 | fetch | GET | /api/v2/memories/{id} |

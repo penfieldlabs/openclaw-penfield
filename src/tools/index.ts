@@ -8,6 +8,7 @@ import { SearchToolSchema, executeSearchTool } from "./search.js";
 import { FetchToolSchema, executeFetchTool } from "./fetch.js";
 import { UpdateMemoryToolSchema, executeUpdateMemoryTool } from "./update-memory.js";
 import { ConnectToolSchema, executeConnectTool } from "./connect.js";
+import { DisconnectToolSchema, executeDisconnectTool } from "./disconnect.js";
 import { ExploreToolSchema, executeExploreTool } from "./explore.js";
 import { SaveContextToolSchema, executeSaveContextTool } from "./save-context.js";
 import {
@@ -62,7 +63,7 @@ export function registerPenfieldTools(
     });
   };
 
-  // Register all 16 tools
+  // Register all 17 tools
   registerTool(
     "penfield_store",
     "Store Memory",
@@ -109,6 +110,14 @@ export function registerPenfieldTools(
     "Create a relationship between two memories",
     ConnectToolSchema,
     executeConnectTool
+  );
+
+  registerTool(
+    "penfield_disconnect",
+    "Disconnect Memories",
+    "Remove a relationship between two memories",
+    DisconnectToolSchema,
+    executeDisconnectTool
   );
 
   registerTool(

@@ -1,5 +1,6 @@
 import { Type } from "../types/typebox.js";
 import type { PenfieldApiClient } from "../api-client.js";
+import { compactReflectResponse } from "../response-compact.js";
 
 export const ReflectToolSchema = Type.Object({
   time_window: Type.Optional(
@@ -57,6 +58,8 @@ export async function executeReflectTool(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- params validated by schema
   const p = { ...(params as any) };
 
+  const originalTimeWindow = p.time_window ?? "recent";
+
   if (p.time_window === "90d") {
     // API has no 90d window — convert to explicit date range (matches MCP behavior)
     if (!p.start_date) {
@@ -70,11 +73,13 @@ export async function executeReflectTool(
   }
 
   const response = await apiClient.post("/api/v2/analysis/reflect", p);
+  const compact = compactReflectResponse(response, originalTimeWindow);
+
   return {
     content: [
       {
         type: "text",
-        text: JSON.stringify(response, null, 2),
+        text: JSON.stringify(compact, null, 2),
       },
     ],
     details: response,

@@ -25,6 +25,7 @@ Persistent memory that compounds. Your agent remembers conversations, learns pre
 | Tool | Purpose | When to use |
 |------|---------|-------------|
 | `penfield_connect` | Link two memories | New info relates to existing knowledge, building understanding over time |
+| `penfield_disconnect` | Remove link between memories | Relationship was created in error or is no longer valid |
 | `penfield_explore` | Traverse graph from a memory | Understanding how ideas connect, finding related context |
 
 ### Context & Analysis
@@ -44,6 +45,12 @@ Persistent memory that compounds. Your agent remembers conversations, learns pre
 | `penfield_retrieve_artifact` | Get a file | Loading previously saved work |
 | `penfield_list_artifacts` | List stored files | Browsing saved artifacts |
 | `penfield_delete_artifact` | Remove a file | Cleaning up outdated artifacts |
+
+### Personality
+
+| Tool | Purpose | When to use |
+|------|---------|-------------|
+| `penfield_awaken` | Load personality config | Session start, identity refresh |
 
 ## Writing Memories That Actually Work
 

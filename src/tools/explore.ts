@@ -1,6 +1,7 @@
 import { Type, RelationshipTypeSchema } from "../types/typebox.js";
 import type { PenfieldApiClient } from "../api-client.js";
 import { validateUuid } from "../validation.js";
+import { compactExploreResponse } from "../response-compact.js";
 
 export const ExploreToolSchema = Type.Object({
   start_memory_id: Type.String({
@@ -36,11 +37,13 @@ export async function executeExploreTool(
   validateUuid(start_memory_id, 'start_memory_id');
 
   const response = await apiClient.post("/api/v2/relationships/traverse", params);
+  const compact = compactExploreResponse(response, start_memory_id);
+
   return {
     content: [
       {
         type: "text",
-        text: JSON.stringify(response, null, 2),
+        text: JSON.stringify(compact, null, 2),
       },
     ],
     details: response,

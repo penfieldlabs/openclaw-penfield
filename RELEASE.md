@@ -1,7 +1,7 @@
-# Release Notes: openclaw-penfield v1.1.2
+# Release Notes: openclaw-penfield v2.0.0
 
-**Date:** February 9, 2026
-**Type:** Patch Release (UX Improvement)
+**Date:** March 13, 2026
+**Type:** Major Release
 
 ---
 
@@ -9,7 +9,9 @@
 
 Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API.
 
-**v1.1.2 adds an auth warning for unauthenticated installs.** When the plugin is installed but not authenticated, the `before_agent_start` hook now injects an ACTION REQUIRED message into the agent's system prompt, telling it to instruct the user to run `openclaw penfield login`. Previously, unauthenticated installs silently failed with no feedback.
+**v2.0.0 adds the `penfield_disconnect` tool**, completing the knowledge graph CRUD lifecycle. You can now remove relationships between memories, mirroring the MCP server's disconnect functionality. The plugin now provides 17 tools.
+
+**v2.0.0 also introduces compact responses** for recall, search, reflect, and explore tools — mirroring the MCP server's field-stripping patterns. Debug fields (score_breakdown, search_metadata, knowledge_cloud) are stripped, reducing context token usage by 60-80%. New parameters: `start_date`/`end_date` (temporal filters), `sort` (relevance/chronological), and `max_content_length` (content truncation).
 
 ---
 
@@ -32,6 +34,7 @@ Native OpenClaw plugin providing direct integration with Penfield's memory and k
 - 4-5x faster than mcporter → MCP → Penfield stack
 - Lazy runtime initialization
 - In-memory credential caching
+- Compact responses: debug fields stripped from recall/search/reflect/explore (60-80% context token reduction)
 
 ### Authentication
 - OAuth 2.1 Device Code Flow (RFC 8628)
@@ -48,10 +51,11 @@ Native OpenClaw plugin providing direct integration with Penfield's memory and k
 | `penfield_fetch` | Get memory by ID |
 | `penfield_update_memory` | Update existing memory |
 
-### Knowledge Graph Tools (2)
+### Knowledge Graph Tools (3)
 | Tool | Description |
 |------|-------------|
 | `penfield_connect` | Create relationships (24 types) |
+| `penfield_disconnect` | Remove relationship between memories |
 | `penfield_explore` | Traverse knowledge graph |
 
 ### Context Management (3)
