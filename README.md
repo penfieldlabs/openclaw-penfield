@@ -30,7 +30,7 @@ Tell your agent to "Awaken with Penfield"
 
 ## Get Access
 
-Sign up for free triall access:
+Sign up for free trial access:
 
 **[portal.penfield.app/sign-up](https://portal.penfield.app/sign-up)**
 
