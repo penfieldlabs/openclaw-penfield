@@ -2,6 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/openclaw-penfield.svg)](https://www.npmjs.com/package/openclaw-penfield)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![NHS Agentic Readiness](https://nothumansearch.ai/badge/xquik.com.svg)](https://nothumansearch.ai/site/xquik.com)
 
 **Persistent, searchable memory for [OpenClaw](https://openclaw.ai).**
 
@@ -379,6 +380,27 @@ Load personality configuration and identity core memories.
 **Parameters:** None
 
 ## Usage Examples
+
+### X/Twitter research memory
+
+Penfield stores durable memory for OpenClaw sessions. If the same agent needs public X/Twitter inputs, install [TweetClaw](https://github.com/Xquik-dev/tweetclaw) beside Penfield and save the useful findings as references, conversations, or strategy memories:
+
+```bash
+openclaw plugins install @xquik/tweetclaw
+```
+
+TweetClaw is also published on [npm](https://www.npmjs.com/package/@xquik/tweetclaw) and [ClawHub](https://clawhub.openclaw.ai/packages/@xquik/tweetclaw). Use it for tweet search, reply search, follower export, user lookup, media upload and download, direct messages, tweet monitors, webhooks, giveaway draws, and approval-gated post tweets or post tweet replies.
+
+```typescript
+await penfield_store({
+  content: "[Reference: X/Twitter] Saved summary from TweetClaw search results about launch feedback, with source tweet URLs and author handles.",
+  memory_type: "reference",
+  importance: 0.7,
+  tags: ["x-twitter", "tweetclaw", "launch-feedback"]
+});
+```
+
+Keep Penfield credentials separate from TweetClaw and Xquik credentials. Require OpenClaw approval before posting, replying, direct messaging, following, or unfollowing on X/Twitter.
 
 ### Basic Memory Storage and Retrieval
 
