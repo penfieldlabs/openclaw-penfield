@@ -1,7 +1,7 @@
 # TOOLS
 
 <!-- ============================================================
-  PENFIELD TEMPLATE — What belongs here
+  PENFIELD TEMPLATE - What belongs here
 
   This file is for local environment notes that help the agent
   use tools correctly. Think of it as "cheat sheet for my setup."

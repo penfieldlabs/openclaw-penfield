@@ -1,21 +1,54 @@
-import { z } from "zod";
+import { Type } from "typebox";
+import { httpsUrl, parseSchema } from "./schema.js";
+import { production } from "./store.js";
 
-// Production defaults - can be overridden via config or environment variables
-const DEFAULT_AUTH_URL = process.env.PENFIELD_AUTH_URL || "https://auth.penfield.app";
-const DEFAULT_API_URL = process.env.PENFIELD_API_URL || "https://api.penfield.app";
-
-export { DEFAULT_AUTH_URL, DEFAULT_API_URL };
-
-// Minimal config schema - everything optional for device flow
-// Note: enabled is handled by OpenClaw at entry level, not in pluginConfig
-//
-// IMPORTANT: This zod schema is the source of truth for config validation.
-// If you modify this, also update openclaw.plugin.json configSchema to match.
-export const PenfieldConfigSchema = z.object({
-  authUrl: z.string().optional(),
-  apiUrl: z.string().optional(),
-  autoAwaken: z.boolean().default(true),
-  autoOrient: z.boolean().default(true),
-}).strict();
-
-export type PenfieldConfig = z.infer<typeof PenfieldConfigSchema>;
+export const configSchema = Type.Object(
+  {
+    apiUrl: Type.Optional(httpsUrl),
+    authUrl: Type.Optional(httpsUrl),
+    apiKey: Type.Optional(Type.String({ minLength: 1, pattern: "\\S" })),
+    autoAwaken: Type.Optional(Type.Boolean({ default: true })),
+    compactionFlush: Type.Optional(Type.Boolean({ default: false })),
+    autoOrient: Type.Optional(Type.Boolean({ default: true })),
+  },
+  { additionalProperties: false }
+);
+export function parseConfig(value: unknown) {
+  const config = parseSchema(configSchema, value, "Penfield configuration");
+  return {
+    ...config,
+    apiKey: config.apiKey?.trim(),
+    autoAwaken: config.autoAwaken ?? true,
+    compactionFlush: config.compactionFlush ?? false,
+    autoOrient: config.autoOrient ?? true,
+  };
+}
+export type PenfieldConfig = ReturnType<typeof parseConfig>;
+export function connectionOptions(config: PenfieldConfig, env: NodeJS.ProcessEnv = process.env) {
+  const legacy = config.authUrl ?? env.PENFIELD_AUTH_URL;
+  let apiUrl = config.apiUrl ?? env.PENFIELD_API_URL;
+  if (!apiUrl && legacy) {
+    const origin = new URL(legacy).origin;
+    if (origin === "https://auth-dev.penfield.app") apiUrl = "https://api-dev.penfield.app";
+    else if (origin !== "https://auth.penfield.app")
+      throw new Error("Set apiUrl for OAuth discovery on a custom Penfield server.");
+  }
+  apiUrl ??= production;
+  const url = new URL(apiUrl);
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.pathname !== "/" ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error("Penfield apiUrl must be an HTTPS origin.");
+  }
+  const key = config.apiKey ?? env.PENFIELD_API_KEY;
+  if (key !== undefined && !key.trim())
+    throw new Error(
+      "The configured API key is empty. Supply a key or unset it to use browser sign-in."
+    );
+  return { apiUrl: url.origin, apiKey: key?.trim() };
+}

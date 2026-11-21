@@ -1,7 +1,7 @@
 # AGENTS
 
 <!-- ============================================================
-  PENFIELD TEMPLATE — What belongs here (and what doesn't)
+  PENFIELD TEMPLATE - What belongs here (and what doesn't)
 
   With Penfield handling identity, personality, and memory via
   awaken/reflect, this file should ONLY contain OpenClaw-specific

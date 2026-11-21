@@ -1,117 +1,57 @@
-import { DEFAULT_AUTH_URL, PenfieldConfigSchema, type PenfieldConfig } from "./src/config.js";
-import { createPenfieldRuntime, type PenfieldRuntime } from "./src/runtime.js";
-import { registerPenfieldTools } from "./src/tools/index.js";
-import { registerPenfieldHooks, resetHookCaches } from "./src/hooks.js";
+import { toolPluginMetadataSymbol, type ToolPluginMetadata } from "openclaw/plugin-sdk/tool-plugin";
+import { buildJsonPluginConfigSchema, definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { connectionOptions, configSchema, parseConfig } from "./src/config.js";
+import { registerPenfieldTools, penfieldToolMetadata } from "./src/tools/index.js";
+import { registerPenfieldHooks } from "./src/hooks.js";
 import { registerLoginCommand } from "./src/cli.js";
 import { createAuthService } from "./src/auth-service.js";
-import type { OpenClawPluginApi } from "./src/types.js";
+import { PenfieldApiClient } from "./src/api-client.js";
 
-const penfieldPlugin = {
+const identity = {
   id: "openclaw-penfield",
   name: "Penfield Memory",
-  description: "Native Penfield memory integration with 17 tools for knowledge management",
-
-  configSchema: {
-    parse(value: unknown): PenfieldConfig {
-      return PenfieldConfigSchema.parse(value ?? {});
-    },
-    uiHints: {
-      enabled: {
-        label: "Enable Penfield",
-        help: "Enable Penfield memory integration",
-      },
-      authUrl: {
-        label: "Auth URL",
-        help: "Penfield Auth service URL (default: https://auth.penfield.app)",
-      },
-      apiUrl: {
-        label: "API URL",
-        help: "Penfield API URL (default: https://api.penfield.app)",
-      },
-      autoAwaken: {
-        label: "Auto-Awaken",
-        help: "Inject Penfield identity briefing on every agent turn (default: true)",
-      },
-      autoOrient: {
-        label: "Auto-Orient",
-        help: "Inject recent Penfield memory context on every agent turn (default: true)",
-      },
-    },
-  },
-
-  register(api: OpenClawPluginApi) {
-    const cfg = PenfieldConfigSchema.parse(api.pluginConfig ?? {});
-    const logger = api.logger;
-
-    // Runtime state - follows voice-call pattern
-    let runtimePromise: Promise<PenfieldRuntime> | null = null;
-    let runtime: PenfieldRuntime | null = null;
-
-    // Create auth service (single instance)
-    const authUrl = cfg.authUrl || DEFAULT_AUTH_URL;
-
-    const authService = createAuthService(api, {
-      authUrl,
-      // clientId loaded from credentials on first login
-    });
-
-    // Lazy runtime initialization with race condition protection
-    const ensureRuntime = async (): Promise<PenfieldRuntime> => {
-      if (runtime) return runtime;
-      if (!runtimePromise) {
-        runtimePromise = createPenfieldRuntime({
-          api,
-          config: cfg,
-          authService,
-          logger,
-        }).catch((err) => {
-          runtimePromise = null;
-          throw err;
-        });
-      }
-      runtime = await runtimePromise;
-      return runtime;
-    };
-
-    // Register CLI commands (penfield login)
-    registerLoginCommand(api);
-
-    // Register background auth service
-    api.registerService({
-      id: "penfield-auth",
-      async start(_ctx) {
-        await authService.start();
-        logger.info("[penfield-auth] Service started");
-      },
-      async stop(_ctx) {
-        await authService.stop();
-        logger.info("[penfield-auth] Service stopped");
-      },
-    });
-
-    // Register all 17 tools
-    registerPenfieldTools(api, ensureRuntime);
-
-    // Register lifecycle hooks (auto-awaken + auto-orient, injected every turn)
-    registerPenfieldHooks({ api, config: cfg, ensureRuntime, logger });
-
-    // Register service for runtime lifecycle
-    api.registerService({
-      id: "penfield",
-      async start(_ctx) {
-        logger.info("[penfield] Service started");
-      },
-      async stop(_ctx) {
-        resetHookCaches();
-        if (runtime) {
-          await runtime.stop();
-          runtime = null;
-          runtimePromise = null;
-        }
-        logger.info("[penfield] Service stopped");
-      },
-    });
-  },
+  description: "Penfield memory, relationships, checkpoints, and artifacts",
 };
 
-export default penfieldPlugin;
+const jsonConfig = { ...configSchema };
+const plugin = definePluginEntry({
+  ...identity,
+  kind: "memory",
+  configSchema: buildJsonPluginConfigSchema(jsonConfig),
+  register(api) {
+    const config = parseConfig(api.pluginConfig ?? {});
+    const options = connectionOptions(config);
+    const authService = createAuthService(api, options);
+    const apiClient = new PenfieldApiClient(authService, options.apiUrl, api.logger);
+    const runtime = { apiClient, authService };
+    api.registerMemoryCapability({
+      recallToolNames: ["penfield_recall", "penfield_fetch"],
+      providerFlushPlanResolver: () =>
+        config.compactionFlush
+          ? {
+              prompt:
+                "Before compaction, recall relevant Penfield memories if needed. If there is new durable information, combine it into one concise memory and call penfield_store once. Otherwise finish silently.",
+              systemPrompt:
+                "Use Penfield for this save. Preserve decisions and their reasons. Omit secrets, transcripts and transient details. Leave room for one automatic tag.",
+              persistenceToolNames: ["penfield_store"],
+              lookupToolNames: ["penfield_recall"],
+            }
+          : null,
+    });
+    registerLoginCommand(api, runtime);
+    registerPenfieldTools(api, apiClient, config.compactionFlush ? options.apiUrl : undefined);
+    registerPenfieldHooks({ api, config, runtime });
+  },
+});
+
+// The SDK validator reads static tool metadata. Use the same descriptors that
+// register the tools while keeping the memory, hook and CLI entry points.
+Object.defineProperty(plugin, toolPluginMetadataSymbol, {
+  value: {
+    ...identity,
+    activation: { onStartup: true },
+    configSchema: jsonConfig,
+    tools: penfieldToolMetadata,
+  } satisfies ToolPluginMetadata,
+});
+export default plugin;

@@ -1,3 +1,19 @@
+export interface ExploreResponse {
+  node_details?: Record<string, Record<string, unknown>>;
+  relationship_details?: Record<string, Record<string, unknown>>;
+  paths?: { nodes?: string[]; relationships?: string[] }[];
+  max_depth_reached?: number;
+}
+export interface ReflectResponse {
+  memories?: Record<string, unknown>[];
+  active_topics?: unknown[];
+  statistics?: { total_memories_analyzed?: number };
+  emerging_patterns?: unknown[];
+  relationship_insights?: unknown[];
+}
+export interface SearchResponse {
+  items?: RawSearchResult[];
+}
 /**
  * Response compaction utilities.
  *
@@ -5,7 +21,7 @@
  * the fields they need, saving context tokens and reducing noise.
  */
 
-/** Minimum relevance score — results below this are dropped (matches MCP) */
+/** Minimum relevance score. results below this are dropped (matches MCP) */
 export const RELEVANCE_THRESHOLD = 0.05;
 
 /** Maximum memories returned in reflect compaction */
@@ -62,8 +78,7 @@ export interface CompactRecallResponse {
  * Optionally sorts by created date and truncates content.
  */
 export function compactRecallResponse(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw API shape
-  response: any,
+  response: SearchResponse,
   query: string,
   options?: { sort?: string; maxContentLength?: number }
 ): CompactRecallResponse {
@@ -111,16 +126,14 @@ export function compactRecallResponse(
   } else if (options?.sort === "created_asc") {
     memories.sort((a, b) => (a.created ?? "").localeCompare(b.created ?? ""));
   }
-  // default "relevance" — already sorted by API
+  // default "relevance". already sorted by API
 
-  // Content truncation
-  if (options?.maxContentLength != null && options.maxContentLength > 0) {
-    const max = options.maxContentLength;
-    for (const m of memories) {
-      if (m.content && m.content.length > max) {
-        m.content = m.content.slice(0, max) + "... [truncated, use penfield_fetch for full content]";
-      }
-    }
+  const max = options?.maxContentLength ?? 800;
+  for (const m of memories) {
+    if (m.content && m.content.length > max)
+      m.content = m.content.slice(0, max) + "... [use penfield_fetch]";
+    if (m.content_with_context && m.content_with_context.length > max)
+      m.content_with_context = m.content_with_context.slice(0, max) + "...";
   }
 
   return { query, found: memories.length, memories };
@@ -152,13 +165,12 @@ export interface CompactReflectResponse {
  * Strips full statistics object. Slices memories to top 5, topics to top 10.
  */
 export function compactReflectResponse(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw API shape
-  response: any,
+  response: ReflectResponse,
   timeWindow: string
 ): CompactReflectResponse {
   const rawMemories: Record<string, unknown>[] = response?.memories ?? [];
   const topMemories = rawMemories.slice(0, MAX_REFLECT_MEMORIES).map((m) => ({
-    content: m.content as string | undefined,
+    content: typeof m.content === "string" ? m.content.slice(0, 800) : undefined,
     type: (m.memory_type as string) ?? "unknown",
     importance: m.importance as number | undefined,
     score: m.score as number | undefined,
@@ -213,15 +225,25 @@ export interface CompactExploreResponse {
  * Enriches nodes/relationships with selective fields from detail lookups.
  */
 export function compactExploreResponse(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw API shape
-  response: any,
-  startMemoryId: string
+  response: ExploreResponse,
+  startMemoryId: string,
+  minStrength?: number,
+  maxPaths = 25
 ): CompactExploreResponse {
   const nodeDetails: Record<string, Record<string, unknown>> = response?.node_details ?? {};
   const relDetails: Record<string, Record<string, unknown>> = response?.relationship_details ?? {};
   const rawPaths: { nodes?: string[]; relationships?: string[] }[] = response?.paths ?? [];
 
-  const paths: CompactPath[] = rawPaths.map((path) => {
+  const matching =
+    minStrength === undefined
+      ? rawPaths
+      : rawPaths.filter((path) =>
+          (path.relationships ?? []).every((id) => {
+            const strength = relDetails[id]?.strength;
+            return typeof strength === "number" && strength >= minStrength;
+          })
+        );
+  const paths: CompactPath[] = matching.slice(0, maxPaths).map((path) => {
     const rawNodes = path.nodes ?? [];
     const rawRels = path.relationships ?? [];
 
@@ -230,7 +252,7 @@ export function compactExploreResponse(
       if (detail) {
         return {
           id: nid,
-          preview: detail.preview as string | undefined,
+          preview: typeof detail.preview === "string" ? detail.preview.slice(0, 240) : undefined,
           type: detail.type as string | undefined,
           tags: (detail.tags as string[]) ?? [],
         };
@@ -255,7 +277,7 @@ export function compactExploreResponse(
 
   const result: CompactExploreResponse = {
     start_memory: startMemoryId,
-    paths_found: paths.length,
+    paths_found: matching.length,
     max_depth_reached: response?.max_depth_reached ?? 0,
     paths,
   };

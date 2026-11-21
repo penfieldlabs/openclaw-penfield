@@ -1,13 +1,16 @@
 {
   "name": "openclaw-penfield",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
   "description": "Native OpenClaw plugin for Penfield memory integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "openclaw.plugin.json"
+    "openclaw.plugin.json",
+    "skill",
+    "persona-templates/MEMORY.md",
+    "AUTHENTICATION_NOTES.md"
   ],
   "keywords": [
     "openclaw",
@@ -26,11 +29,10 @@
   },
   "homepage": "https://github.com/penfieldlabs/openclaw-penfield#readme",
   "dependencies": {
-    "@sinclair/typebox": "^0.34.47",
-    "zod": "^3.22.4"
+    "typebox": "1.4.2"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.1.29"
+    "openclaw": ">=2026.10.33"
   },
   "peerDependenciesMeta": {
     "openclaw": {
@@ -38,23 +40,39 @@
     }
   },
   "devDependencies": {
-    "@types/node": "^25.0.9",
-    "eslint": "^9.39.2",
-    "prettier": "^3.2.5",
-    "typescript": "^5.3.3",
-    "typescript-eslint": "^8.54.0"
+    "@eslint/js": "^10.0.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.0.0",
+    "openclaw": "2026.11.6",
+    "prettier": "^3.8.0",
+    "typescript": "~6.0.0",
+    "typescript-eslint": "^8.73.0"
   },
   "scripts": {
     "build": "tsc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"**/*.{ts,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,json,md}\"",
-    "typecheck": "tsc --noEmit"
+    "format": "prettier --write \"**/*.{ts,mjs,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,mjs,js,json,md}\"",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "test:live": "npm run build && node --test test/live/*.test.mjs",
+    "test:host": "npm run build && node --test test/host-smoke.mjs"
   },
   "openclaw": {
     "extensions": [
       "./dist/index.js"
-    ]
+    ],
+    "compat": {
+      "pluginApi": ">=2026.10.33",
+      "minGatewayVersion": "2026.10.33"
+    },
+    "build": {
+      "openclawVersion": "2026.11.6",
+      "pluginSdkVersion": "2026.11.6"
+    }
+  },
+  "engines": {
+    "node": ">=24.16.0 <25 || >=26.1.0"
   }
 }

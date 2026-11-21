@@ -3,12 +3,78 @@
   "kind": "memory",
   "configSchema": {
     "type": "object",
-    "additionalProperties": false,
     "properties": {
-      "authUrl": { "type": "string" },
-      "apiUrl": { "type": "string" },
-      "autoAwaken": { "type": "boolean", "default": true },
-      "autoOrient": { "type": "boolean", "default": true }
+      "apiUrl": {
+        "type": "string",
+        "pattern": "^https://[^\\s/?#@]+(?:[/?#][^\\s]*)?$"
+      },
+      "authUrl": {
+        "type": "string",
+        "pattern": "^https://[^\\s/?#@]+(?:[/?#][^\\s]*)?$"
+      },
+      "apiKey": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S"
+      },
+      "autoAwaken": {
+        "type": "boolean",
+        "default": true
+      },
+      "compactionFlush": {
+        "type": "boolean",
+        "default": false
+      },
+      "autoOrient": {
+        "type": "boolean",
+        "default": true
+      }
+    },
+    "additionalProperties": false
+  },
+  "name": "Penfield Memory",
+  "version": "3.0.0",
+  "description": "Penfield memory, relationships, checkpoints, and artifacts",
+  "categories": ["memory"],
+  "contracts": {
+    "tools": [
+      "penfield_store",
+      "penfield_recall",
+      "penfield_search",
+      "penfield_fetch",
+      "penfield_update_memory",
+      "penfield_connect",
+      "penfield_disconnect",
+      "penfield_explore",
+      "penfield_save_context",
+      "penfield_restore_context",
+      "penfield_list_contexts",
+      "penfield_reflect",
+      "penfield_save_artifact",
+      "penfield_retrieve_artifact",
+      "penfield_list_artifacts",
+      "penfield_delete_artifact",
+      "penfield_awaken"
+    ]
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "uiHints": {
+    "apiKey": {
+      "label": "Optional restricted API key",
+      "sensitive": true
+    },
+    "authUrl": {
+      "help": "Deprecated. OAuth endpoints are discovered from apiUrl."
     }
-  }
+  },
+  "cliCommands": [
+    {
+      "name": "penfield",
+      "description": "Penfield sign-in and memory commands",
+      "hasSubcommands": true
+    }
+  ],
+  "skills": ["./skill"]
 }
