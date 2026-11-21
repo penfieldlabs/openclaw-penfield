@@ -1,240 +1,94 @@
-import { Type } from "../types/typebox.js";
+import type { Static } from "typebox";
+import { checkpointFields, checkpointPages, type Checkpoint } from "./checkpoints.js";
+import { PenfieldError } from "../http.js";
+import { Type, MaxContentLengthSchema } from "../types/typebox.js";
 import type { PenfieldApiClient } from "../api-client.js";
 import { isUuid } from "../validation.js";
 
-export const RestoreContextToolSchema = Type.Object({
-  name: Type.String({
-    description:
-      'Name or ID of context to restore. Can be a context name (exact match), ' +
-      'a context UUID, or "awakening" for personality briefing.',
-    minLength: 1,
-  }),
-  limit: Type.Optional(
-    Type.Integer({
-      description: "Maximum number of memories to restore (default: 20)",
-      minimum: 1,
-      maximum: 100,
-      default: 20,
-    })
-  ),
-}, { additionalProperties: false });
-
-interface CheckpointMemory {
-  id: string;
-  content: string;
-  memory_type?: string;
-  created_at?: string;
-  metadata?: {
-    checkpoint_name?: string;
-    memory_count?: number;
-  };
-}
-
-interface MemoriesResponse {
-  items: CheckpointMemory[];
-  pagination: {
-    total: number;
-    page: number;
-    per_page: number;
-    pages: number;
-    has_next: boolean;
-  };
-}
-
-interface RestoredMemory {
-  id: string;
-  content: string;
-  memory_type?: string;
-  created_at?: string;
-}
+export const RestoreContextToolSchema = Type.Object(
+  {
+    name: Type.String({
+      description:
+        "Name or ID of context to restore. Can be a context name (exact match), " +
+        'a context UUID, or "awakening" for personality briefing.',
+      minLength: 1,
+    }),
+    max_content_length: Type.Optional(MaxContentLengthSchema),
+    limit: Type.Optional(
+      Type.Integer({
+        description: "Maximum number of memories to restore (default: 20)",
+        minimum: 1,
+        maximum: 100,
+        default: 20,
+      })
+    ),
+  },
+  { additionalProperties: false }
+);
 
 export async function executeRestoreContextTool(
   apiClient: PenfieldApiClient,
-  params: unknown
-): Promise<any> { // eslint-disable-line @typescript-eslint/no-explicit-any -- validated return format
-  const { name, limit = 20 } = params as { name: string; limit?: number };
-
-  // Special case: "awakening" loads personality briefing
+  input: Static<typeof RestoreContextToolSchema>
+) {
+  const { name, limit = 20, max_content_length = 1000 } = input;
   if (name.toLowerCase() === "awakening") {
-    return restoreAwakening(apiClient);
+    const { briefing } = await apiClient.get<{ briefing: string }>("/api/v2/personality/awakening");
+    const details = {
+      success: true,
+      context_id: "awakening",
+      description: briefing,
+      memories: [],
+      memories_restored: 0,
+    };
+    return { content: [{ type: "text" as const, text: briefing }], details };
   }
-
-  // Resolve the checkpoint: by UUID or by name
-  let checkpoint: CheckpointMemory | null = null;
-
+  let checkpoint: Checkpoint | undefined;
   if (isUuid(name)) {
-    // Direct UUID lookup
-    checkpoint = await resolveByUuid(apiClient, name);
-  }
-
-  if (!checkpoint) {
-    // Name-based lookup: list checkpoints and match by metadata.checkpoint_name
-    // or parsed content.checkpoint_name
-    checkpoint = await resolveByName(apiClient, name);
-  }
-
-  if (!checkpoint) {
-    const errorResult = {
-      success: false,
-      error: `No context found matching "${name}"`,
-    };
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(errorResult, null, 2),
-        },
-      ],
-      details: errorResult,
-    };
-  }
-
-  // Parse checkpoint content to get referenced memory IDs
-  let description: string | null = null;
-  let memoryIds: string[] = [];
-
-  try {
-    const parsed = JSON.parse(checkpoint.content);
-    description = parsed.description ?? null;
-    memoryIds = parsed.memory_ids ?? [];
-  } catch {
-    // Content isn't JSON — use it as the description directly
-    description = checkpoint.content;
-  }
-
-  // Fetch referenced memories concurrently (up to limit)
-  const validIds = memoryIds.slice(0, limit).filter(isUuid);
-  const settled = await Promise.allSettled(
-    validIds.map((memId) =>
-      apiClient.get<RestoredMemory>(`/api/v2/memories/${memId}`),
-    ),
-  );
-  const memories: RestoredMemory[] = [];
-  for (const result of settled) {
-    if (result.status === "fulfilled") {
-      const mem = result.value;
-      memories.push({
-        id: mem.id,
-        content: mem.content,
-        memory_type: mem.memory_type,
-        created_at: mem.created_at,
-      });
+    try {
+      const memory = await apiClient.get<Checkpoint>("/api/v2/memories/" + name);
+      if (memory.memory_type === "checkpoint") checkpoint = memory;
+    } catch (err) {
+      if (!(err instanceof PenfieldError && err.status === 404)) throw err;
     }
-    // Rejected = memory deleted or inaccessible — skip silently
   }
-
-  const result = {
+  if (!checkpoint) {
+    for await (const page of checkpointPages(apiClient)) {
+      checkpoint = page.items.find((m) => checkpointFields(m).name === name);
+      if (checkpoint) break;
+    }
+  }
+  if (!checkpoint) throw new Error('No context found matching "' + name + '"');
+  const { description, ids } = checkpointFields(checkpoint);
+  const validIds = ids.filter(isUuid).slice(0, limit);
+  const memories = [];
+  for (let i = 0; i < validIds.length; i += 6) {
+    const batch = await Promise.all(
+      validIds.slice(i, i + 6).map(async (id) => {
+        try {
+          const m = await apiClient.get<Checkpoint>("/api/v2/memories/" + id);
+          return {
+            id: m.id,
+            content:
+              m.content.length > max_content_length
+                ? m.content.slice(0, max_content_length) + "... [use penfield_fetch]"
+                : m.content,
+            memory_type: m.memory_type,
+            created_at: m.created_at,
+          };
+        } catch (err) {
+          if (err instanceof PenfieldError && err.status === 404) return null;
+          throw err;
+        }
+      })
+    );
+    memories.push(...batch.filter((m) => m !== null));
+  }
+  const details = {
     success: true,
     context_id: checkpoint.id,
     description,
     memories,
     memories_restored: memories.length,
   };
-
-  return {
-    content: [
-      {
-        type: "text",
-        text: JSON.stringify(result, null, 2),
-      },
-    ],
-    details: result,
-  };
-}
-
-async function restoreAwakening(
-  apiClient: PenfieldApiClient,
-): Promise<any> { // eslint-disable-line @typescript-eslint/no-explicit-any
-  try {
-    const response = await apiClient.get<{ briefing: string }>(
-      "/api/v2/personality/awakening",
-    );
-
-    const result = {
-      success: true,
-      context_id: "awakening",
-      description: response.briefing || "",
-      memories: [],
-      memories_restored: 0,
-    };
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: response.briefing || "",
-        },
-      ],
-      details: result,
-    };
-  } catch {
-    const errorResult = {
-      success: false,
-      error: "Failed to load awakening briefing",
-    };
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(errorResult, null, 2),
-        },
-      ],
-      details: errorResult,
-    };
-  }
-}
-
-async function resolveByUuid(
-  apiClient: PenfieldApiClient,
-  uuid: string,
-): Promise<CheckpointMemory | null> {
-  try {
-    const mem = await apiClient.get<CheckpointMemory>(
-      `/api/v2/memories/${uuid}`,
-    );
-    // Verify it's a checkpoint
-    if (mem.memory_type !== "checkpoint") {
-      return null;
-    }
-    return mem;
-  } catch {
-    return null;
-  }
-}
-
-async function resolveByName(
-  apiClient: PenfieldApiClient,
-  name: string,
-): Promise<CheckpointMemory | null> {
-  try {
-    const response = await apiClient.get<MemoriesResponse>(
-      "/api/v2/memories",
-      { memory_type: "checkpoint", per_page: "100" },
-    );
-
-    const items = response.items ?? [];
-
-    // First pass: match by metadata.checkpoint_name (exact, case-sensitive)
-    for (const mem of items) {
-      if (mem.metadata?.checkpoint_name === name) {
-        return mem;
-      }
-    }
-
-    // Second pass: match by parsed content.checkpoint_name
-    for (const mem of items) {
-      try {
-        const parsed = JSON.parse(mem.content);
-        if (parsed.checkpoint_name === name) {
-          return mem;
-        }
-      } catch {
-        // Not JSON — skip
-      }
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
+  return { content: [{ type: "text" as const, text: JSON.stringify(details) }], details };
 }

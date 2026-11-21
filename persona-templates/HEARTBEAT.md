@@ -1,7 +1,7 @@
 # HEARTBEAT
 
 <!-- ============================================================
-  PENFIELD TEMPLATE — Heartbeat Checklist
+  PENFIELD TEMPLATE - Heartbeat Checklist
 
   This file runs on a timer (default: every 30 minutes). OpenClaw
   reads it and follows the checklist each cycle.
@@ -13,7 +13,7 @@
   Keep it SHORT. This injects into context every cycle. A bloated
   heartbeat wastes tokens 48 times a day.
 
-  Penfield has nothing to do with heartbeat — this is purely
+  Penfield has nothing to do with heartbeat - this is purely
   OpenClaw operational. Keep it as-is and customize the checklist
   to your needs.
   ============================================================ -->

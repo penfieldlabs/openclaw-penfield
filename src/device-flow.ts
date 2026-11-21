@@ -1,249 +1,179 @@
-/**
- * RFC 8628 Device Code Flow implementation for Penfield OAuth
- *
- * Discovers endpoints dynamically from /.well-known/oauth-authorization-server
- */
+import { setTimeout as delay } from "node:timers/promises";
+import { Type } from "typebox";
+import { httpsUrl, parseSchema } from "./schema.js";
+import { PenfieldError, requestJson } from "./http.js";
 
-export interface DeviceFlowParams {
-  /** Base URL of Penfield Auth service (e.g., https://auth.penfield.app) */
-  authUrl: string;
-  /** OAuth client ID (optional - will register if not provided) */
-  clientId?: string;
-  /** Prompter for showing messages to user */
-  prompter: { info(msg: string): void; warn(msg: string): void; error(msg: string): void };
-  /** Optional: open URL in browser */
-  openUrl?: (url: string) => Promise<void>;
+import { loadClientId, saveClientId, withCredentialLock, type StorageHost } from "./store.js";
+
+const nonempty = Type.String({ minLength: 1 });
+const positive = Type.Number({ exclusiveMinimum: 0 });
+const tokenSchema = Type.Object({
+  access_token: nonempty,
+  refresh_token: Type.Optional(Type.Union([nonempty, Type.Null()])),
+  expires_in: positive,
+  scope: Type.Optional(Type.String()),
+});
+export function parseTokens(value: unknown) {
+  return parseSchema(tokenSchema, value, "Penfield token response");
+}
+const metadata = Type.Object({
+  issuer: httpsUrl,
+  token_endpoint: httpsUrl,
+  registration_endpoint: Type.Optional(httpsUrl),
+  device_authorization_endpoint: Type.Optional(httpsUrl),
+  revocation_endpoint: Type.Optional(httpsUrl),
+});
+const clientSchema = Type.Object({ client_id: nonempty });
+const deviceSchema = Type.Object({
+  device_code: nonempty,
+  user_code: nonempty,
+  verification_uri: httpsUrl,
+  verification_uri_complete: Type.Optional(httpsUrl),
+  expires_in: positive,
+  interval: Type.Optional(positive),
+});
+export async function discoverEndpoints(apiUrl: string) {
+  return parseSchema(
+    metadata,
+    await requestJson(new URL("/.well-known/oauth-authorization-server", apiUrl)),
+    "OAuth discovery metadata"
+  );
 }
 
-export interface DeviceFlowResult {
-  clientId: string;       // The client_id used (registered or provided)
-  access_token: string;
-  refresh_token?: string;
-  expires_in: number;
-  scope?: string;
-}
+const scope = "read write delete offline_access";
 
-interface OAuthDiscovery {
-  issuer: string;
-  token_endpoint: string;
-  device_authorization_endpoint?: string;
-  registration_endpoint?: string;
-  scopes_supported: string[];
-}
-
-interface ClientRegistration {
-  client_id: string;
-  client_id_issued_at: number;
-  client_name: string;
-  grant_types: string[];
-  response_types: string[];
-  scope: string;
-}
-
-/**
- * Discover OAuth endpoints from .well-known/oauth-authorization-server
- */
-async function discoverEndpoints(authUrl: string): Promise<OAuthDiscovery> {
-  const response = await fetch(`${authUrl}/.well-known/oauth-authorization-server`);
-  if (!response.ok) {
-    throw new Error(`Failed to discover OAuth endpoints: ${response.statusText}`);
-  }
-  return response.json();
-}
-
-/**
- * Register a dynamic client (DCR) if clientId not provided
- * Returns the client_id to use
- */
-async function getOrRegisterClient(
-  authUrl: string,
-  providedClientId?: string,
-  prompter?: { info(msg: string): void }
-): Promise<string> {
-  if (providedClientId) {
-    return providedClientId;
-  }
-
-  // Discover endpoints dynamically (RFC 8414)
-  const discovery = await discoverEndpoints(authUrl);
-
-  // RFC 8414: registration_endpoint must be advertised if DCR is supported
-  if (!discovery.registration_endpoint) {
-    throw new Error(
-      'Dynamic Client Registration not supported: registration_endpoint not advertised in OAuth discovery'
-    );
-  }
-  const registrationEndpoint = discovery.registration_endpoint;
-
-  const regResp = await fetch(registrationEndpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+async function registerClient(endpoint: string | undefined) {
+  if (!endpoint) throw new Error("The server does not advertise dynamic registration.");
+  const result = await requestJson(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      client_name: 'openclaw-penfield',
-      redirect_uris: ['http://localhost:8080/callback'],
-      grant_types: ['urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'],
-      response_types: ['code'],
-      token_endpoint_auth_method: 'none',
-      scope: 'read write offline_access'
-    })
+      client_name: "OpenClaw (Penfield plugin)",
+      redirect_uris: ["http://localhost:8080/callback"],
+      grant_types: ["urn:ietf:params:oauth:grant-type:device_code", "refresh_token"],
+      response_types: ["code"],
+      token_endpoint_auth_method: "none",
+      scope,
+    }),
   });
-
-  if (!regResp.ok) {
-    const error = await regResp.json().catch(() => ({}));
-    throw new Error(`Client registration failed: ${error.error_description || error.error || regResp.statusText}`);
-  }
-
-  const client: ClientRegistration = await regResp.json();
-  prompter?.info(`[penfield] Registered dynamic client: ${client.client_id}`);
-
-  return client.client_id;
+  return parseSchema(clientSchema, result, "OAuth client registration").client_id;
 }
 
-/**
- * Execute the complete OAuth Device Code Flow (RFC 8628)
- */
-export async function executeDeviceFlow(params: DeviceFlowParams): Promise<DeviceFlowResult> {
-  const { authUrl, clientId, prompter, openUrl } = params;
+export function isInvalidClient(err: unknown): boolean {
+  return err instanceof PenfieldError && err.code === "invalid_client";
+}
 
-  // Discover endpoints dynamically
-  const discovery = await discoverEndpoints(authUrl);
-  const tokenEndpoint = discovery.token_endpoint;
-
-  // Get or register client
-  const actualClientId = await getOrRegisterClient(authUrl, clientId, prompter);
-
-  // RFC 8628: device_authorization_endpoint must be advertised for device flow
-  if (!discovery.device_authorization_endpoint) {
-    throw new Error(
-      'Device Authorization Grant not supported: device_authorization_endpoint not advertised in OAuth discovery'
-    );
-  }
-  const deviceEndpoint = discovery.device_authorization_endpoint;
-
-  // Request offline_access for refresh tokens (RFC 8628 + RFC 9700)
-  const scope = 'read write offline_access';
-
-  // Step 1: Request device code (form-encoded per RFC 8628)
-  const deviceResp = await fetch(deviceEndpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: actualClientId,
-      scope
-    })
-  });
-
-  if (!deviceResp.ok) {
-    const error = await deviceResp.json().catch(() => ({}));
-    throw new Error(`Device authorization failed: ${deviceResp.statusText}${error.error ? ` - ${error.error}` : ''}`);
-  }
-
-  const deviceData = await deviceResp.json();
-  const { device_code, user_code, verification_uri_complete, expires_in, interval } = deviceData;
-
-  // Step 2: Show user instructions
-  prompter.info(`🔐 Penfield Authorization Required\n`);
-  prompter.info(`To authorize, visit: ${verification_uri_complete || deviceData.verification_uri}`);
-  prompter.info(`Or enter code: ${user_code}\n`);
-  prompter.info(`Waiting for authorization...`);
-
-  if (openUrl && verification_uri_complete) {
-    try {
-      await openUrl(verification_uri_complete);
-    } catch {
-      // Silently ignore openUrl failures
-    }
-  }
-
-  // Step 3: Poll for token (form-encoded per RFC 8628)
-  let pollInterval = interval || 5;
-  const expiresAt = Date.now() + (expires_in * 1000);
-
-  while (Date.now() < expiresAt) {
-    await new Promise(resolve => setTimeout(resolve, pollInterval * 1000));
-
-    const tokenResp = await fetch(tokenEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-        device_code,
-        client_id: actualClientId
-      })
-    });
-
-    if (tokenResp.ok) {
-      const tokens = await tokenResp.json();
-      prompter.info('✅ Authorization successful!');
+export async function beginDeviceFlow(
+  apiUrl: string,
+  host: StorageHost,
+  rejectedClientId?: string
+) {
+  const discovery = await discoverEndpoints(apiUrl);
+  const endpoint = discovery.device_authorization_endpoint;
+  if (!endpoint) throw new Error("The server does not advertise device sign-in.");
+  return withCredentialLock(host, apiUrl, async () => {
+    const saved = loadClientId(host, apiUrl);
+    const register = async () => {
+      const id = await registerClient(discovery.registration_endpoint);
+      saveClientId(host, apiUrl, id);
+      return id;
+    };
+    const authorize = async (clientId: string) => {
+      const device = parseSchema(
+        deviceSchema,
+        await requestJson(endpoint, {
+          method: "POST",
+          body: new URLSearchParams({ client_id: clientId, scope }),
+        }),
+        "device authorization response"
+      );
       return {
-        clientId: actualClientId,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expires_in: tokens.expires_in,
-        scope: tokens.scope
+        clientId,
+        device,
+        tokenEndpoint: discovery.token_endpoint,
+        expiresAt: Date.now() + device.expires_in * 1000,
       };
+    };
+    if (saved && saved !== rejectedClientId) {
+      try {
+        return await authorize(saved);
+      } catch (err) {
+        if (!isInvalidClient(err)) throw err;
+      }
     }
-
-    const error = await tokenResp.json().catch(() => ({}));
-
-    if (error.error === 'authorization_pending') {
-      continue;
-    }
-
-    if (error.error === 'slow_down') {
-      pollInterval += 5;
-      continue;
-    }
-
-    if (error.error === 'access_denied') {
-      throw new Error('Authorization denied by user');
-    }
-
-    if (error.error === 'expired_token') {
-      throw new Error('Device code expired - please try again');
-    }
-
-    // Provide meaningful error message
-    const errorDesc = error.error_description || error.error || 'Unknown error';
-    throw new Error(`Authorization failed: ${errorDesc}`);
-  }
-
-  throw new Error('Device code expired - please try again');
+    return authorize(await register());
+  });
 }
 
-/**
- * Refresh an access token using a refresh token (RFC 8628 + RFC 9700)
- */
-export async function refreshAccessToken(
-  authUrl: string,
-  refreshToken: string,
-  clientId: string
-): Promise<DeviceFlowResult> {
-  // Discover token endpoint dynamically
-  const discovery = await discoverEndpoints(authUrl);
-  const tokenEndpoint = discovery.token_endpoint;
-
-  const tokenResp = await fetch(tokenEndpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: clientId
-    })
-  });
-
-  if (!tokenResp.ok) {
-    const error = await tokenResp.json().catch(() => ({}));
-    throw new Error(`Token refresh failed: ${error.error_description || error.error || tokenResp.statusText}`);
+export async function pollDeviceFlow(pending: Awaited<ReturnType<typeof beginDeviceFlow>>) {
+  let interval = (pending.device.interval ?? 5) * 1000;
+  while (Date.now() < pending.expiresAt) {
+    await delay(Math.min(interval, pending.expiresAt - Date.now()));
+    const remaining = pending.expiresAt - Date.now();
+    if (remaining <= 0) break;
+    try {
+      const response = await requestJson(pending.tokenEndpoint, {
+        method: "POST",
+        signal: AbortSignal.timeout(remaining),
+        body: new URLSearchParams({
+          grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+          device_code: pending.device.device_code,
+          client_id: pending.clientId,
+        }),
+      });
+      return parseTokens(response);
+    } catch (err) {
+      if (Date.now() >= pending.expiresAt) break;
+      if (err instanceof PenfieldError) {
+        if (err.code === "authorization_pending") continue;
+        if (err.code === "slow_down") {
+          interval += 5000;
+          continue;
+        }
+        if (err.code === "invalid_grant" || err.code === "expired_token") break;
+        if (err.code === "access_denied") throw new Error("Sign-in was denied.", { cause: err });
+      }
+      throw err;
+    }
   }
-
-  const tokens = await tokenResp.json();
-  return {
-    clientId,  // Pass through the clientId
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token, // RFC 9700: token rotation - use new refresh token
-    expires_in: tokens.expires_in,
-    scope: tokens.scope
-  };
+  throw new Error("Device code expired. Run openclaw penfield login again.");
+}
+export async function refreshAccessToken(apiUrl: string, refresh: string, clientId: string) {
+  const { token_endpoint } = await discoverEndpoints(apiUrl);
+  return parseTokens(
+    await requestJson(token_endpoint, {
+      method: "POST",
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refresh,
+        client_id: clientId,
+      }),
+    })
+  );
+}
+export async function revokeTokens(
+  apiUrl: string,
+  cred: { access: string; refresh?: string; clientId: string }
+) {
+  const { revocation_endpoint } = await discoverEndpoints(apiUrl);
+  if (!revocation_endpoint) throw new Error("The server does not advertise token revocation.");
+  for (const [hint, token] of [
+    ["refresh_token", cred.refresh],
+    ["access_token", cred.access],
+  ]) {
+    if (token)
+      await requestJson(
+        revocation_endpoint,
+        {
+          method: "POST",
+          body: new URLSearchParams({
+            client_id: cred.clientId,
+            token,
+            token_type_hint: hint!,
+          }),
+        },
+        undefined,
+        true
+      );
+  }
 }

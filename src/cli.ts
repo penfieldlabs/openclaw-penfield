@@ -1,57 +1,84 @@
-/**
- * CLI command registration for Penfield plugin
- */
+import type { OpenClawPluginApi } from "./types.js";
+import type { PenfieldRuntime } from "./runtime.js";
+import { executeAwakenTool } from "./tools/awaken.js";
 
-import type { OpenClawPluginApi, OpenClawPluginCliContext } from './types.js';
-import { executeDeviceFlow } from './device-flow.js';
-import { saveCredential } from './store.js';
-import { DEFAULT_AUTH_URL } from './config.js';
-
-/**
- * Register the 'penfield' CLI command group with 'login' subcommand
- */
-export function registerLoginCommand(api: OpenClawPluginApi): void {
-  api.registerCli(({ program, logger }: OpenClawPluginCliContext) => {
-    const root = program
-      .command('penfield')
-      .description('Penfield Memory commands');
-
-    root
-      .command('login')
-      .description('Authenticate with Penfield using OAuth Device Flow')
-      .action(async () => {
-        try {
-          // Use pluginConfig directly (same as index.ts)
-          const config = api.pluginConfig as { authUrl?: string; clientId?: string } | undefined;
-          const authUrl = config?.authUrl || DEFAULT_AUTH_URL;
-
-          logger.info(`[penfield] CLI login - authUrl: ${authUrl}`);
-
-          // CLI context doesn't have api.runtime, so create a prompter from logger
-          const prompter = {
-            info(msg: string) { logger.info(msg); },
-            warn(msg: string) { logger.warn(msg); },
-            error(msg: string) { logger.error(msg); },
-          };
-
-          const tokens = await executeDeviceFlow({
-            authUrl,
-            clientId: config?.clientId,  // Optional - will register if not provided
-            prompter,
-            // openUrl not available in CLI context
+export function registerLoginCommand(api: OpenClawPluginApi, runtime: PenfieldRuntime): void {
+  const { authService: auth, apiClient } = runtime;
+  api.registerCli(
+    ({ program, config }) => {
+      const root = program
+        .command("penfield")
+        .description("Sign in to Penfield and check memory access");
+      const command = (name: string, description: string, action: () => Promise<string>) => {
+        root
+          .command(name)
+          .description(description)
+          .action(async () => {
+            try {
+              console.log(await action());
+            } catch (err) {
+              process.exitCode = 1;
+              console.error(err instanceof Error ? err.message : String(err));
+            }
           });
-
-          saveCredential(api, {
-            clientId: tokens.clientId,
-            access: tokens.access_token,
-            refresh: tokens.refresh_token,
-            expires: Date.now() + tokens.expires_in * 1000,
-          });
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          logger.error(`Login failed: ${message}`);
-          process.exit(1);
-        }
+      };
+      command("login", "Sign in with a browser", async () => {
+        const scope = await auth.login((message) => console.log(message));
+        return (
+          `Saved browser sign-in. Granted permissions: ${scope.join(", ") || "unreported"}.` +
+          (auth.mode === "API key" ? " The configured API key still takes precedence." : "")
+        );
       });
-  }, { commands: ['penfield'] });
+      command("status", "Verify the active login with Penfield", async () => {
+        const entry = config?.plugins?.entries?.["openclaw-penfield"];
+        if (entry?.config?.autoAwaken === false && entry.config.autoOrient === false) {
+          console.log("Prompt hook disabled. Both autoAwaken and autoOrient are off.");
+        } else if (entry?.hooks?.allowConversationAccess !== true) {
+          console.log(
+            "Prompt hook blocked. Run openclaw config set plugins.entries.openclaw-penfield.hooks.allowConversationAccess true and restart the gateway."
+          );
+        } else if (entry.hooks.allowPromptInjection === false) {
+          console.log(
+            "Prompt hook blocked by plugins.entries.openclaw-penfield.hooks.allowPromptInjection."
+          );
+        } else {
+          console.log(
+            "Prompt hook conversation access granted. Per-turn tool permissions still apply."
+          );
+        }
+        const status = await apiClient.get<{ valid: boolean }>("/api/v2/auth/verify");
+        if (status?.valid !== true) throw new Error("Penfield did not verify this login.");
+        const access = await apiClient.checkReadAccess();
+        const permissions = auth.getScopes().join(", ") || "unreported";
+        if (access === "restricted")
+          return `Penfield recognized this ${auth.mode}. Read access is restricted. Granted permissions: ${permissions}.`;
+        return `Verified ${auth.mode}. Granted permissions: ${permissions}.`;
+      });
+      command("refresh", "Renew the active credential now", async () => {
+        await auth.getAccessToken(true);
+        return `Renewed ${auth.mode}.`;
+      });
+      command("logout", "Revoke the saved browser sign-in at Penfield", async () => {
+        const revoked = await auth.logout();
+        return (
+          (revoked ? "Revoked the saved browser sign-in." : "No saved browser sign-in.") +
+          (auth.mode === "API key" ? " The configured API key remains active." : "")
+        );
+      });
+      command("awaken", "Read the briefing using the awaken tool", async () => {
+        const result = await executeAwakenTool(apiClient, {});
+        return result.content[0].text;
+      });
+    },
+    {
+      commands: ["penfield"],
+      descriptors: [
+        {
+          name: "penfield",
+          description: "Penfield sign-in and memory commands",
+          hasSubcommands: true,
+        },
+      ],
+    }
+  );
 }

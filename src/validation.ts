@@ -5,6 +5,32 @@
  * provides better UX (fail fast) and prevents malformed requests.
  */
 
+/** Return a usable Penfield tag when the value has one. */
+export function cleanTag(value: string): string | undefined {
+  const tag = value
+    .trim()
+    .toLowerCase()
+    .replace(/[ _]/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return tag.length >= 2 && tag.length <= 50 ? tag : undefined;
+}
+
+export function cleanTags(values: string[]): string[] {
+  const tags = new Set<string>();
+  for (const [index, value] of values.entries()) {
+    const tag = cleanTag(value);
+    if (!tag)
+      throw new Error(
+        `Tag ${index + 1} must be 2 to 50 characters after cleaning. Use ASCII letters, digits and hyphens.`
+      );
+    tags.add(tag);
+  }
+  if (tags.size > 10) throw new Error("A memory accepts up to 10 distinct tags after cleaning.");
+  return [...tags];
+}
+
 // UUID v4 format: 8-4-4-4-12 hex digits
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -28,30 +54,20 @@ export function validateUuid(value: string, fieldName: string): void {
   }
 }
 
-/**
- * Validate artifact path for safety.
- * Prevents path traversal and ensures proper format.
- *
- * @throws Error if path is invalid
- */
-export function validateArtifactPath(path: string): void {
-  if (!path || typeof path !== 'string') {
-    throw new Error('Artifact path is required');
-  }
-
-  if (path.includes('..')) {
-    throw new Error('Artifact path cannot contain ".." (path traversal not allowed)');
-  }
-
-  if (!path.startsWith('/')) {
-    throw new Error('Artifact path must be absolute (start with "/")');
-  }
-
-  // Prevent null bytes and other control characters
-  for (let i = 0; i < path.length; i++) {
-    const code = path.charCodeAt(i);
-    if (code < 32) {
-      throw new Error('Artifact path contains invalid characters');
-    }
+/** Validate a file path or a directory prefix before sending it to Penfield. */
+export function validateArtifactPath(path: string, directory = false): void {
+  if (typeof path !== "string" || !path.startsWith("/"))
+    throw new Error("Artifact path must start with /.");
+  if (directory && path === "/") return;
+  const parts = (directory ? path.replace(/\/$/, "") : path).slice(1).split("/");
+  if (parts.length > (directory ? 10 : 11))
+    throw new Error("Artifact paths support at most ten folders.");
+  if (
+    path.includes("..") ||
+    parts.some((part) => !part || part.startsWith(".") || !/^[A-Za-z0-9_.-]+$/.test(part))
+  ) {
+    throw new Error(
+      "Use visible file and folder names containing letters, digits, dots, dashes or underscores."
+    );
   }
 }

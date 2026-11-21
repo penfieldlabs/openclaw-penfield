@@ -5,13 +5,15 @@
 
 ---
 
+These notes describe the historical 2.0.0 release. See [CHANGELOG.md](CHANGELOG.md) for current branch changes.
+
 ## Overview
 
 Native OpenClaw plugin providing direct integration with Penfield's memory and knowledge graph API.
 
 **v2.0.0 adds the `penfield_disconnect` tool**, completing the knowledge graph CRUD lifecycle. You can now remove relationships between memories, mirroring the MCP server's disconnect functionality. The plugin now provides 17 tools.
 
-**v2.0.0 also introduces compact responses** for recall, search, reflect, and explore tools — mirroring the MCP server's field-stripping patterns. Debug fields (score_breakdown, search_metadata, knowledge_cloud) are stripped, reducing context token usage by 60-80%. New parameters: `start_date`/`end_date` (temporal filters), `sort` (relevance/chronological), and `max_content_length` (content truncation).
+**v2.0.0 also introduces compact responses** for recall, search, reflect, and explore tools, mirroring the MCP server's field-stripping patterns. Debug fields (score_breakdown, search_metadata, knowledge_cloud) are stripped, reducing context token usage by 60-80%. New parameters: `start_date`/`end_date` (temporal filters), `sort` (relevance/chronological), and `max_content_length` (content truncation).
 
 ---
 
@@ -30,6 +32,7 @@ Native OpenClaw plugin providing direct integration with Penfield's memory and k
 ## What's New
 
 ### Performance
+
 - Native HTTP client (no MCP overhead)
 - 4-5x faster than mcporter → MCP → Penfield stack
 - Lazy runtime initialization
@@ -37,50 +40,57 @@ Native OpenClaw plugin providing direct integration with Penfield's memory and k
 - Compact responses: debug fields stripped from recall/search/reflect/explore (60-80% context token reduction)
 
 ### Authentication
+
 - OAuth 2.1 Device Code Flow (RFC 8628)
 - Automatic Dynamic Client Registration (DCR)
 - Token rotation with automatic refresh (RFC 9700)
 - 240-minute expiry buffer
 
 ### Memory Tools (5)
-| Tool | Description |
-|------|-------------|
-| `penfield_store` | Store a new memory (max 10,000 chars) |
-| `penfield_recall` | Hybrid search (BM25 + vector + graph) |
-| `penfield_search` | Semantic search variant |
-| `penfield_fetch` | Get memory by ID |
-| `penfield_update_memory` | Update existing memory |
+
+| Tool                     | Description                           |
+| ------------------------ | ------------------------------------- |
+| `penfield_store`         | Store a new memory (max 10,000 chars) |
+| `penfield_recall`        | Hybrid search (BM25 + vector + graph) |
+| `penfield_search`        | Semantic search variant               |
+| `penfield_fetch`         | Get memory by ID                      |
+| `penfield_update_memory` | Update existing memory                |
 
 ### Knowledge Graph Tools (3)
-| Tool | Description |
-|------|-------------|
-| `penfield_connect` | Create relationships (24 types) |
+
+| Tool                  | Description                          |
+| --------------------- | ------------------------------------ |
+| `penfield_connect`    | Create relationships (24 types)      |
 | `penfield_disconnect` | Remove relationship between memories |
-| `penfield_explore` | Traverse knowledge graph |
+| `penfield_explore`    | Traverse knowledge graph             |
 
 ### Context Management (3)
-| Tool | Description |
-|------|-------------|
-| `penfield_save_context` | Save cognitive state checkpoint for agent handoff |
-| `penfield_restore_context` | Restore checkpoint by name, UUID, or "awakening" |
-| `penfield_list_contexts` | List saved checkpoints |
+
+| Tool                       | Description                                       |
+| -------------------------- | ------------------------------------------------- |
+| `penfield_save_context`    | Save cognitive state checkpoint for agent handoff |
+| `penfield_restore_context` | Restore checkpoint by name, UUID, or "awakening"  |
+| `penfield_list_contexts`   | List saved checkpoints                            |
 
 ### Analysis (1)
-| Tool | Description |
-|------|-------------|
+
+| Tool               | Description             |
+| ------------------ | ----------------------- |
 | `penfield_reflect` | Analyze memory patterns |
 
 ### Artifact Storage (4)
-| Tool | Description |
-|------|-------------|
-| `penfield_save_artifact` | Save file artifact |
+
+| Tool                         | Description            |
+| ---------------------------- | ---------------------- |
+| `penfield_save_artifact`     | Save file artifact     |
 | `penfield_retrieve_artifact` | Retrieve file artifact |
-| `penfield_list_artifacts` | List artifacts |
-| `penfield_delete_artifact` | Delete artifact |
+| `penfield_list_artifacts`    | List artifacts         |
+| `penfield_delete_artifact`   | Delete artifact        |
 
 ### Personality (1)
-| Tool | Description |
-|------|-------------|
+
+| Tool              | Description                    |
+| ----------------- | ------------------------------ |
 | `penfield_awaken` | Load personality configuration |
 
 ---
@@ -131,6 +141,7 @@ openclaw penfield login
 ```
 
 This will:
+
 1. Discover OAuth endpoints from the auth server
 2. Register a dynamic client (DCR) if needed
 3. Display a device code for user authentication
