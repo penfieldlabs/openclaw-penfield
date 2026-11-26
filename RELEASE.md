@@ -160,12 +160,6 @@ File permissions: `0o600` (owner-only)
 
 ---
 
-## Credits
-
-Author: Frank Fiegel
-
----
-
 ## Links
 
 - Repository: https://github.com/penfieldlabs/openclaw-penfield
